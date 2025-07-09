@@ -493,7 +493,7 @@ app.get('/test-data', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`PDF service running on port ${PORT}`);
   console.log(`Test data available at: http://localhost:${PORT}/test-data`);
   console.log(`Generate PDF with: POST http://localhost:${PORT}/generate-pdf`);
