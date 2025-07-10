@@ -493,8 +493,42 @@ app.get('/test-data', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
+
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'PDF Generator Service is running',
+    endpoints: {
+      testData: '/test-data',
+      generatePdf: '/generate-pdf'
+    }
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Solo UN app.listen()
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`PDF service running on port ${PORT}`);
-  console.log(`Test data available at: http://localhost:${PORT}/test-data`);
-  console.log(`Generate PDF with: POST http://localhost:${PORT}/generate-pdf`);
+  console.log(`Health check: https://your-app.railway.app/health`);
+  console.log(`Test data: https://your-app.railway.app/test-data`);
+});
+
+// Manejo de señales para cierre graceful
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
