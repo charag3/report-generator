@@ -303,7 +303,11 @@ app.post('/generate-pdf', async (req, res) => {
     });
     
     const page = await browser.newPage();
-    await page.setContent(html);
+     await page.setContent(html, {
+     waitUntil: 'domcontentloaded',
+     timeout: 120000 // 2 minutos
+});
+
     
     // Generar PDF
     const pdf = await page.pdf({
