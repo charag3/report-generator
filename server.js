@@ -18,7 +18,10 @@ function generateHTML(data) {
     roadmap: "Roadmap 30‑90 días",
     conclusion: "Conclusión",
     impact: "Impacto",
-    effort: "Esfuerzo"
+    effort: "Esfuerzo",
+    area: "Área",
+    whatWeFound: "¿Qué encontramos?",
+    whyItMatters: "¿Por qué importa?"
   } : {
     reportTitle: "Soma Express Audit Report",
     siteEvaluated: "Site evaluated",
@@ -29,7 +32,10 @@ function generateHTML(data) {
     roadmap: "Roadmap 30‑90 days",
     conclusion: "Conclusion",
     impact: "Impact",
-    effort: "Effort"
+    effort: "Effort",
+    area: "Area",
+    whatWeFound: "What we found",
+    whyItMatters: "Why it matters"
   };
 
   const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
@@ -219,23 +225,24 @@ td:first-child {
       <div class="section">
         <h2 class="section-title">2. ${t.findings}</h2>
         <table>
-          <thead>
-            <tr>
-              <th>Área</th>
-              <th>¿Qué encontramos?</th>
-              <th>¿Por qué importa?</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.hallazgos.map(h => `
-              <tr>
-                <td style="font-weight: 600; ">${h.area}</td>
-                <td>${h.what}</td>
-                <td>${h.why}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <thead>
+         <tr>
+           <th>${t.area}</th>
+           <th>${t.whatWeFound}</th>
+          <th>${t.whyItMatters}</th>
+         </tr>
+       </thead>
+      <tbody>
+    ${data.hallazgos.map(h => ` 
+      <tr>
+        <td style="font-weight: 600; ">${h.area}</td>
+        <td>${h.what}</td>
+        <td>${h.why}</td>
+      </tr>
+    `).join('')}
+  </tbody>
+          </table>
+
       </div>
 
       <div class="section">
