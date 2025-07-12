@@ -198,7 +198,7 @@ td:first-child {
 <body>
 
 <div class="header">
-  <img class="logo" src="https://somaspace.site/icon.png" alt="Soma logo" />
+  <img class="logo" src="/public/icon.png" alt="Soma logo" />
   <h1>${t.reportTitle}</h1>
   <p class="subtitle">
     ${t.siteEvaluated}: <strong>${data.site}</strong> • ${t.date}: ${data.date}
