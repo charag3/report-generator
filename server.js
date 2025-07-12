@@ -322,16 +322,18 @@ app.post('/generate-pdf', async (req, res) => {
 
     
     // Generar PDF
-    const pdf = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
-    });
+   const bodyHandle = await page.$('body');
+    const boundingBox = await bodyHandle.boundingBox();
+    const height = Math.ceil(boundingBox.height) + 40; // margen extra opcional
+    await bodyHandle.dispose();
+
+  const pdf = await page.pdf({
+    printBackground: true,
+    width: '794px',              // A4 ancho en px @96dpi
+    height: `${height}px`,      // altura dinámica
+    margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    displayHeaderFooter: false
+});
     
     await browser.close();
     
