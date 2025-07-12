@@ -309,9 +309,10 @@ app.post('/generate-pdf', async (req, res) => {
     
     // Lanzar Puppeteer
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'] // Para Railway
-    });
+  executablePath: '/usr/bin/chromium-browser',
+  headless: true,
+  args: ['--no-sandbox', '--disable-setuid-sandbox']
+});
     
     const page = await browser.newPage();
      await page.setContent(html, {
