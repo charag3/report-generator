@@ -321,13 +321,16 @@ app.post('/generate-pdf', async (req, res) => {
 
     
     // Generar PDF
-const bodyHandle = await page.$('body');
-
-// Medir altura total del contenido
-const boundingBox = await bodyHandle.boundingBox();
-const contentHeight = Math.ceil(boundingBox.height);
-
-await bodyHandle.dispose();
+const contentHeight = await page.evaluate(() => {
+  return Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.offsetHeight,
+    document.body.clientHeight,
+    document.documentElement.clientHeight
+  );
+});
 
 // Ajustar viewport
 await page.setViewport({
