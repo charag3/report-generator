@@ -321,17 +321,36 @@ app.post('/generate-pdf', async (req, res) => {
 
     
     // Generar PDF
-   const bodyHandle = await page.$('body');
-    const boundingBox = await bodyHandle.boundingBox();
-    const height = Math.ceil(boundingBox.height) + 40; // margen extra opcional
-    await bodyHandle.dispose();
+const bodyHandle = await page.$('body');
 
-  const pdf = await page.pdf({
-    printBackground: true,
-    width: '794px',              // A4 ancho en px @96dpi
-    height: `${height}px`,      // altura dinámica
-    margin: { top: '0', right: '0', bottom: '0', left: '0' },
-    displayHeaderFooter: false
+// Medir altura total del contenido
+const boundingBox = await bodyHandle.boundingBox();
+const contentHeight = Math.ceil(boundingBox.height);
+
+await bodyHandle.dispose();
+
+// Ajustar viewport
+await page.setViewport({
+  width: 794,
+  height: contentHeight,
+  deviceScaleFactor: 1,
+});
+
+// Ajustar tamaño del HTML para evitar saltos de página
+await page.evaluate((height) => {
+  document.body.style.width = '794px';
+  document.body.style.height = `${height}px`;
+  document.body.style.overflow = 'hidden';
+}, contentHeight);
+
+// Generar PDF
+const pdf = await page.pdf({
+  printBackground: true,
+  width: '794px',
+  height: `${contentHeight}px`,
+  pageRanges: '1',
+  displayHeaderFooter: false,
+  margin: { top: '0', right: '0', bottom: '0', left: '0' },
 });
     
     await browser.close();
