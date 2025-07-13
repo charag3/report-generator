@@ -197,6 +197,9 @@ td:first-child {
   background: #fff;
   page-break-inside: avoid;
 }
+.section:last-of-type {
+  margin-bottom: 60px;
+}
 </style>
 </head>
 <body>
