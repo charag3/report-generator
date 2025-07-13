@@ -190,10 +190,8 @@ td:first-child {
   color: var(--g500);
   border-top: 1px solid var(--g200);
   padding: 8px;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  margin-top: 40px;
+  position: relative;
   background: #fff;
   page-break-inside: avoid;
 }
