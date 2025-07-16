@@ -16,261 +16,247 @@ function generateHTML(data) {
     reportTitle: "Soma Express Audit Report",
     siteEvaluated: "Sitio evaluado",
     date: "Fecha",
-    introduction: "Introducción",
-    findings: "Hallazgos clave",
-    quickWins: "Quick‑wins (esta semana)",
-    roadmap: "Roadmap 30‑90 días",
-    conclusion: "Conclusión",
+    overview: "Resumen general",
+    scores: "Calificaciones",
+    aspect: "Aspecto",
+    score: "Calificación",
+    findings: "Hallazgos",
+    category: "Categoría",
+    issue: "Problema",
     impact: "Impacto",
-    effort: "Esfuerzo",
-    area: "Área",
-    whatWeFound: "¿Qué encontramos?",
-    whyItMatters: "¿Por qué importa?"
+    recommendation: "Recomendación",
+    opportunities: "Oportunidades estratégicas",
+    conclusion: "Conclusión"
   } : {
     reportTitle: "Soma Express Audit Report",
     siteEvaluated: "Site evaluated",
     date: "Date",
-    introduction: "Introduction",
-    findings: "Key findings",
-    quickWins: "Quick wins (this week)",
-    roadmap: "Roadmap 30‑90 days",
-    conclusion: "Conclusion",
+    overview: "Overview",
+    scores: "Scores",
+    aspect: "Aspect",
+    score: "Score",
+    findings: "Findings",
+    category: "Category",
+    issue: "Issue",
     impact: "Impact",
-    effort: "Effort",
-    area: "Area",
-    whatWeFound: "What we found",
-    whyItMatters: "Why it matters"
+    recommendation: "Recommendation",
+    opportunities: "Strategic Opportunities",
+    conclusion: "Conclusion"
   };
 
-  const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+  const stars = (n) => "★".repeat(n) + "☆".repeat(10 - n);
 
   return `
     <!DOCTYPE html>
-   <!DOCTYPE html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${t.reportTitle}</title>
-<style>
-:root {
-  --ink: #0f172a;
-  --flow: hsl(148 50% 45%);
-  --bg: #fafafa;
-  --g100: #f8fafc;
-  --g200: #e2e8f0;
-  --g500: #64748b;
-  --g600: #475569;
-}
+    <html lang="${data.lang}">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${t.reportTitle}</title>
+      <style>
+        :root {
+          --ink: #0f172a;
+          --flow: hsl(148 50% 45%);
+          --bg: #fafafa;
+          --g100: #f8fafc;
+          --g200: #e2e8f0;
+          --g500: #64748b;
+          --g600: #475569;
+        }
 
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
 
-body {
-  font-family: 'Space Grotesk', sans-serif;
-  color: var(--ink);
-  background: #fff;
-  max-width: 750px;
-  margin: 0 auto;
-  padding: 30px 20px 80px 20px; /* espacio inferior para footer */
-  line-height: 1.5;
-  font-size: 11px;
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-  position: relative;
-  box-sizing: border-box;
-}
+        body {
+          font-family: 'Space Grotesk', sans-serif;
+          color: var(--ink);
+          background: #fff;
+          max-width: 750px;
+          margin: 0 auto;
+          padding: 30px 20px 80px 20px;
+          line-height: 1.5;
+          font-size: 11px;
+          display: flex;
+          flex-direction: column;
+          min-height: 100%;
+          position: relative;
+          box-sizing: border-box;
+        }
 
-h1 {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
+        .header {
+          margin-bottom: 40px;
+          text-align: center;
+        }
 
-h2 {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
+        .logo {
+          display: block;
+          width: 28px;
+          height: 28px;
+          margin: 0 auto 8px;
+        }
 
-.section-title {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
+        h1 {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
 
-.header {
-  margin-bottom: 40px;
-  text-align: center;
-}
+        h2 {
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
 
-.logo {
-  display: block;
-  width: 28px;
-  height: 28px;
-  margin: 0 auto 8px;
-}
+        .section-title {
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
 
-.section {
-  margin-bottom: 40px;
-}
+        .section {
+          margin-bottom: 40px;
+        }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border: 1px solid var(--g200);
-  font-size: 10px;
-  margin-bottom: 20px;
-}
+        .section:last-of-type {
+          margin-bottom: 60px;
+        }
 
-th {
-  background: var(--g100);
-  color: var(--ink);
-  font-weight: 600;
-  text-align: left;
-  padding: 6px 8px;
-}
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: #fff;
+          border: 1px solid var(--g200);
+          font-size: 10px;
+          margin-bottom: 20px;
+        }
 
-td {
-  padding: 6px 8px;
-  border-top: 1px solid var(--g200);
-  vertical-align: top;
-  color: var(--ink);
-}
+        th {
+          background: var(--g100);
+          color: var(--ink);
+          font-weight: 600;
+          text-align: left;
+          padding: 6px 8px;
+        }
 
-td:first-child {
-  font-weight: 600;
-  color: var(--ink);
-}
+        td {
+          padding: 6px 8px;
+          border-top: 1px solid var(--g200);
+          vertical-align: top;
+          color: var(--ink);
+        }
 
-.quick-wins {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
-}
+        td:first-child {
+          font-weight: 600;
+          color: var(--ink);
+        }
 
-.quick-win-card {
-  background: #fff;
-  border: 1px solid var(--g200);
-  border-radius: 4px;
-  padding: 8px;
-  font-size: 10px;
-}
+        .opportunities-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 10px;
+          margin-bottom: 20px;
+        }
 
-.quick-win-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 11px;
-}
+        .opportunity-card {
+          background: #fff;
+          border: 1px solid var(--g200);
+          border-radius: 4px;
+          padding: 8px;
+          font-size: 10px;
+        }
 
-.roadmap {
-  border-left: 1px solid var(--ink);
-  padding-left: 8px;
-  margin-top: 12px;
-}
+        .opportunity-card::before {
+          content: "💡";
+          margin-right: 5px;
+        }
 
-.roadmap-item {
-  margin-bottom: 10px;
-}
+        ul {
+          padding-left: 16px;
+        }
 
-.roadmap-title {
-  font-weight: 600;
-  font-size: 11px;
-}
+        li {
+          margin-bottom: 5px;
+        }
 
-.footer {
-  text-align: center;
-  font-size: 9px;
-  color: var(--g500);
-  border-top: 1px solid var(--g200);
-  padding: 8px;
-  margin-top: 40px;
-  position: relative;
-  background: #fff;
-  page-break-inside: avoid;
-}
-.section:last-of-type {
-  margin-bottom: 60px;
-}
-</style>
-</head>
-<body>
-
-<div class="header">
-  <img class="logo" src="data:image/png;base64,${logoBase64}" alt="Soma logo" />
-  <h1>${t.reportTitle}</h1>
-  <p class="subtitle">
-    ${t.siteEvaluated}: <strong>${data.site}</strong> • ${t.date}: ${data.date}
-  </p>
-</div>
-
-<!-- Aquí continúan las secciones dinámicas -->
-
-<div class="footer">
-  Generated by SomaSpace © 2025
-</div>
-
-</body>
-</html>
-
-
-
-
-      <div class="section">
-        <h2 class="section-title">1. ${t.introduction}</h2>
-        <p>${data.introduction}</p>
+        .footer {
+          text-align: center;
+          font-size: 9px;
+          color: var(--g500);
+          border-top: 1px solid var(--g200);
+          padding: 8px;
+          margin-top: auto;
+          position: relative;
+          background: #fff;
+          page-break-inside: avoid;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <img class="logo" src="data:image/png;base64,${logoBase64}" alt="Soma logo" />
+        <h1>${t.reportTitle}</h1>
+        <p class="subtitle">
+          ${t.siteEvaluated}: <strong>${data.site}</strong> • ${t.date}: ${data.date}
+        </p>
       </div>
 
       <div class="section">
-        <h2 class="section-title">2. ${t.findings}</h2>
+        <h2 class="section-title">1. ${t.overview}</h2>
+        <p>${data.overview}</p>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">2. ${t.scores}</h2>
         <table>
-        <thead>
-         <tr>
-           <th>${t.area}</th>
-           <th>${t.whatWeFound}</th>
-          <th>${t.whyItMatters}</th>
-         </tr>
-       </thead>
-      <tbody>
-    ${data.hallazgos.map(h => ` 
-      <tr>
-        <td style="font-weight: 600; ">${h.area}</td>
-        <td>${h.what}</td>
-        <td>${h.why}</td>
-      </tr>
-    `).join('')}
-  </tbody>
-          </table>
-
+          <thead>
+            <tr>
+              <th>${t.aspect}</th>
+              <th>${t.score}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(data.scores).map(([aspect, value]) => `
+              <tr>
+                <td>${aspect.replace(/_/g, ' ')}</td>
+                <td>${value}/10 &nbsp; ${stars(value)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       </div>
 
       <div class="section">
-        <h2 class="section-title">3. ${t.quickWins}</h2>
-        <div class="quick-wins">
-          ${data.quickWins.map(q => `
-            <div class="quick-win-card">
-              <h3 class="quick-win-title">${q.tarea}</h3>
-              <p><strong>${t.impact}:</strong> ${stars(q.impacto)}</p>
-              <p><strong>${t.effort}:</strong> ${q.esfuerzo}</p>
-            </div>
-          `).join('')}
-        </div>
+        <h2 class="section-title">3. ${t.findings}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>${t.category}</th>
+              <th>${t.issue}</th>
+              <th>${t.impact}</th>
+              <th>${t.recommendation}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.findings.map(f => `
+              <tr>
+                <td>${f.category}</td>
+                <td>${f.issue}</td>
+                <td>${f.impact}</td>
+                <td>${f.recommendation}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       </div>
 
       <div class="section">
-        <h2 class="section-title">4. ${t.roadmap}</h2>
-        <div class="roadmap">
-          ${data.roadmap.map((r, i) => `
-            <div class="roadmap-item">
-              <h3 class="roadmap-title">${i + 1}. ${r.title}</h3>
-              <p>${r.description}</p>
-            </div>
+        <h2 class="section-title">4. ${t.opportunities}</h2>
+        <div class="opportunities-grid">
+          ${data.opportunities.map(o => `
+            <div class="opportunity-card">${o}</div>
           `).join('')}
         </div>
       </div>
@@ -298,7 +284,7 @@ app.post('/generate-pdf', async (req, res) => {
     }
 
     // Validar que tenga las propiedades necesarias
-    const requiredFields = ['site', 'date', 'lang', 'introduction', 'hallazgos', 'quickWins', 'roadmap', 'conclusion'];
+    const requiredFields = ['site', 'date', 'lang', 'overview', 'scores', 'findings', 'opportunities', 'conclusion'];
     const missing = requiredFields.filter(field => !data[field]);
     
     if (missing.length > 0) {
@@ -382,56 +368,48 @@ app.get('/generate-test-pdf', async (req, res) => {
       site: "ejemplo.com",
       date: "2025-01-15",
       lang: "es",
-      introduction: "Este es un reporte de auditoría completo para evaluar el rendimiento y la optimización del sitio web. Hemos analizado diversos aspectos técnicos y de usabilidad.",
-      hallazgos: [
+      overview: "Este es un reporte de auditoría completo para evaluar el rendimiento y la optimización del sitio web. Hemos analizado diversos aspectos técnicos y de usabilidad para proporcionar recomendaciones específicas.",
+      scores: {
+        performance: 6,
+        seo: 7,
+        accessibility: 5,
+        usability: 8,
+        security: 9
+      },
+      findings: [
         {
-          area: "Rendimiento",
-          what: "Tiempo de carga lento (4.2s)",
-          why: "Afecta la experiencia del usuario y el SEO"
+          category: "Performance",
+          issue: "Tiempo de carga lento (4.2s)",
+          impact: "Alto",
+          recommendation: "Optimizar imágenes y implementar lazy loading"
         },
         {
-          area: "SEO",
-          what: "Falta de meta descriptions",
-          why: "Reduce la visibilidad en motores de búsqueda"
+          category: "SEO",
+          issue: "Falta de meta descriptions",
+          impact: "Medio",
+          recommendation: "Agregar meta descriptions únicas para cada página"
         },
         {
-          area: "Accesibilidad",
-          what: "Contraste bajo en algunos botones",
-          why: "Dificulta la navegación para usuarios con discapacidades visuales"
+          category: "Accessibility",
+          issue: "Contraste bajo en algunos botones",
+          impact: "Medio",
+          recommendation: "Mejorar el contraste de color según estándares WCAG"
+        },
+        {
+          category: "Usability",
+          issue: "Navegación confusa en móviles",
+          impact: "Alto",
+          recommendation: "Rediseñar la navegación móvil con menú hamburguesa"
         }
       ],
-      quickWins: [
-        {
-          tarea: "Optimizar imágenes",
-          impacto: 4,
-          esfuerzo: "2 horas"
-        },
-        {
-          tarea: "Agregar meta descriptions",
-          impacto: 3,
-          esfuerzo: "1 hora"
-        },
-        {
-          tarea: "Mejorar contraste de botones",
-          impacto: 2,
-          esfuerzo: "30 minutos"
-        }
+      opportunities: [
+        "Implementar Progressive Web App (PWA) para mejor experiencia móvil",
+        "Configurar Google Analytics 4 para mejor seguimiento",
+        "Optimizar para Core Web Vitals",
+        "Implementar schema markup para rich snippets",
+        "Configurar SSL y HTTPS en todo el sitio"
       ],
-      roadmap: [
-        {
-          title: "Optimización de rendimiento",
-          description: "Implementar lazy loading y compresión de archivos"
-        },
-        {
-          title: "Mejoras de SEO",
-          description: "Auditoría completa de palabras clave y estructura"
-        },
-        {
-          title: "Accesibilidad completa",
-          description: "Implementar ARIA labels y navegación por teclado"
-        }
-      ],
-      conclusion: "El sitio web tiene un potencial significativo de mejora. Con las implementaciones propuestas, se puede lograr un aumento del 40% en el rendimiento y una mejor experiencia de usuario."
+      conclusion: "El sitio web presenta oportunidades significativas de mejora en rendimiento y accesibilidad. Con las implementaciones propuestas, se puede lograr un aumento del 40% en el rendimiento y una mejor experiencia de usuario, lo que resultará en mayor conversión y mejor posicionamiento SEO."
     };
 
     // Generar HTML
@@ -477,56 +455,48 @@ app.get('/test-data', (req, res) => {
     site: "ejemplo.com",
     date: "2025-01-15",
     lang: "es",
-    introduction: "Este es un reporte de auditoría completo para evaluar el rendimiento y la optimización del sitio web. Hemos analizado diversos aspectos técnicos y de usabilidad.",
-    hallazgos: [
+    overview: "Este es un reporte de auditoría completo para evaluar el rendimiento y la optimización del sitio web. Hemos analizado diversos aspectos técnicos y de usabilidad para proporcionar recomendaciones específicas.",
+    scores: {
+      performance: 6,
+      seo: 7,
+      accessibility: 5,
+      usability: 8,
+      security: 9
+    },
+    findings: [
       {
-        area: "Rendimiento",
-        what: "Tiempo de carga lento (4.2s)",
-        why: "Afecta la experiencia del usuario y el SEO"
+        category: "Performance",
+        issue: "Tiempo de carga lento (4.2s)",
+        impact: "Alto",
+        recommendation: "Optimizar imágenes y implementar lazy loading"
       },
       {
-        area: "SEO",
-        what: "Falta de meta descriptions",
-        why: "Reduce la visibilidad en motores de búsqueda"
+        category: "SEO",
+        issue: "Falta de meta descriptions",
+        impact: "Medio",
+        recommendation: "Agregar meta descriptions únicas para cada página"
       },
       {
-        area: "Accesibilidad",
-        what: "Contraste bajo en algunos botones",
-        why: "Dificulta la navegación para usuarios con discapacidades visuales"
+        category: "Accessibility",
+        issue: "Contraste bajo en algunos botones",
+        impact: "Medio",
+        recommendation: "Mejorar el contraste de color según estándares WCAG"
+      },
+      {
+        category: "Usability",
+        issue: "Navegación confusa en móviles",
+        impact: "Alto",
+        recommendation: "Rediseñar la navegación móvil con menú hamburguesa"
       }
     ],
-    quickWins: [
-      {
-        tarea: "Optimizar imágenes",
-        impacto: 4,
-        esfuerzo: "2 horas"
-      },
-      {
-        tarea: "Agregar meta descriptions",
-        impacto: 3,
-        esfuerzo: "1 hora"
-      },
-      {
-        tarea: "Mejorar contraste de botones",
-        impacto: 2,
-        esfuerzo: "30 minutos"
-      }
+    opportunities: [
+      "Implementar Progressive Web App (PWA) para mejor experiencia móvil",
+      "Configurar Google Analytics 4 para mejor seguimiento",
+      "Optimizar para Core Web Vitals",
+      "Implementar schema markup para rich snippets",
+      "Configurar SSL y HTTPS en todo el sitio"
     ],
-    roadmap: [
-      {
-        title: "Optimización de rendimiento",
-        description: "Implementar lazy loading y compresión de archivos"
-      },
-      {
-        title: "Mejoras de SEO",
-        description: "Auditoría completa de palabras clave y estructura"
-      },
-      {
-        title: "Accesibilidad completa",
-        description: "Implementar ARIA labels y navegación por teclado"
-      }
-    ],
-    conclusion: "El sitio web tiene un potencial significativo de mejora. Con las implementaciones propuestas, se puede lograr un aumento del 40% en el rendimiento y una mejor experiencia de usuario."
+    conclusion: "El sitio web presenta oportunidades significativas de mejora en rendimiento y accesibilidad. Con las implementaciones propuestas, se puede lograr un aumento del 40% en el rendimiento y una mejor experiencia de usuario, lo que resultará en mayor conversión y mejor posicionamiento SEO."
   };
   
   res.json(testData);
