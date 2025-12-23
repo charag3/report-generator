@@ -1,8 +1,10 @@
-// server.js - Versión Ekho Engine
+// server.js - Versión Ekho Engine (Optimized)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
+
+// --- CONFIGURACIÓN INICIAL ---
 
 // Carga del Logo de forma segura
 const logoPath = path.join(__dirname, 'assets', 'icon.png');
@@ -16,18 +18,19 @@ try {
 }
 
 const app = express();
+// Aumentamos el límite a 50MB para soportar JSONs grandes con mucho texto
 app.use(express.json({ limit: '50mb' }));
 
-// --- LÓGICA DE ESTILOS Y COLORES ---
+// --- HELPERS VISUALES ---
 
-// Helper: Determina el color según el puntaje (Semáforo)
+// Determina el color del borde según el puntaje
 function getColor(score) {
-  if (score >= 90) return '#10b981'; // Verde Esmeralda (Good)
+  if (score >= 90) return '#10b981'; // Verde (Good)
   if (score >= 50) return '#f59e0b'; // Ambar (Fair)
   return '#ef4444'; // Rojo (Poor)
 }
 
-// Helper: Renderiza la lista de detalles (bullets)
+// Renderiza la lista de detalles (bullets)
 function renderDetails(detailsArray) {
   if (!detailsArray || !Array.isArray(detailsArray) || detailsArray.length === 0) return '';
   return `
@@ -43,7 +46,7 @@ function generateHTML(data) {
   const score = data.readiness_score || 0;
   const clusters = data.clusters || {};
   
-  // Configuración de textos para los 5 Clusters
+  // Configuración de textos y badges para los 5 Clusters
   const clusterConfig = {
     "A_technical":  { title: "A. Technical Foundations", badge: "TECH" },
     "B_visibility": { title: "B. Visibility Foundations", badge: "SEO" },
@@ -52,7 +55,7 @@ function generateHTML(data) {
     "E_content":    { title: "E. Content Foundations",    badge: "CONTENT" }
   };
 
-  // Orden explícito para que siempre salgan A, B, C, D, E
+  // Orden explícito de las tarjetas
   const orderedKeys = ["A_technical", "B_visibility", "C_conversion", "D_trust", "E_content"];
 
   return `
@@ -73,7 +76,7 @@ function generateHTML(data) {
         
         body { 
           font-family: 'Inter', sans-serif; 
-          background-color: #fff; /* Fondo blanco para impresión */
+          background-color: #fff; 
           color: var(--text); 
           max-width: 800px; 
           margin: 0 auto; 
@@ -197,6 +200,9 @@ function generateHTML(data) {
 // --- ENDPOINTS ---
 
 app.post('/generate-pdf', async (req, res) => {
+  let browser = null;
+  let page = null;
+
   try {
     const { data } = req.body;
     
@@ -204,43 +210,44 @@ app.post('/generate-pdf', async (req, res) => {
       return res.status(400).json({ error: 'No data provided' });
     }
 
-    // Validación básica para asegurar que es un JSON de Ekho
-    if (!data.clusters && !data.readiness_score) {
-       console.log("Nota: El JSON recibido no parece tener estructura Ekho, generando igual...");
-    }
-
     const html = generateHTML(data);
     
-    // Configuración robusta de Puppeteer para Railway
-    const browser = await puppeteer.launch({
+    // --- OPTIMIZACIÓN DE MEMORIA PARA RAILWAY ---
+    browser = await puppeteer.launch({
       headless: "new",
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--font-render-hinting=none'
+        '--disable-dev-shm-usage', // Clave: Evita que Chrome crashee en Docker por falta de memoria compartida
+        '--disable-gpu', // Ahorra recursos
+        '--single-process', 
+        '--no-zygote' // Evita procesos zombies
       ]
     });
     
-    const page = await browser.newPage();
+    page = await browser.newPage();
     
-    // Renderizado
+    // Timeout de seguridad: 60s máximo para renderizar
     await page.setContent(html, { 
       waitUntil: 'networkidle0',
       timeout: 60000 
     });
 
+    // Calcular altura dinámica
     const bodyHeight = await page.evaluate(() => document.body.scrollHeight + 100);
 
     const pdf = await page.pdf({
       printBackground: true,
       width: '794px', // Ancho A4
-      height: bodyHeight + 'px', // Altura dinámica continua
+      height: bodyHeight + 'px', // Altura continua
       pageRanges: '1',
       margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
     
+    // --- CIERRE EXPLÍCITO ---
+    await page.close();
     await browser.close();
+    browser = null; // Marcamos como cerrado
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="ekho-audit.pdf"`);
@@ -248,13 +255,16 @@ app.post('/generate-pdf', async (req, res) => {
     
   } catch (error) {
     console.error('Error generando PDF:', error);
+    // Limpieza de emergencia en caso de error
+    if (page) await page.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+    
     res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
   }
 });
 
-// Endpoint de prueba visual (Sin gastar ejecuciones de N8N)
+// Endpoint de prueba visual
 app.get('/test-ekho', (req, res) => {
-    // Datos Dummy para ver el diseño
     const dummyData = {
         site: "demo.ekhoengine.com",
         date: "2025-12-24",
