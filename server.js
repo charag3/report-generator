@@ -1,4 +1,4 @@
-// server.js
+// server.js - Versión Ekho Engine
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -8,7 +8,6 @@ const fs = require('fs');
 const logoPath = path.join(__dirname, 'assets', 'icon.png');
 let logoBase64 = '';
 try {
-  // Si no existe la imagen, no rompe el servidor, solo deja el logo vacío
   if (fs.existsSync(logoPath)) {
     logoBase64 = fs.readFileSync(logoPath).toString('base64');
   }
@@ -17,232 +16,186 @@ try {
 }
 
 const app = express();
-
-// MEJORA 1: Aumentamos el límite a 50MB para evitar errores si el reporte es largo
 app.use(express.json({ limit: '50mb' }));
 
-// Función para generar HTML (Mantenemos el diseño ORIGINAL de Tablas SOMA)
+// --- LÓGICA DE ESTILOS Y COLORES ---
+
+// Helper: Determina el color según el puntaje (Semáforo)
+function getColor(score) {
+  if (score >= 90) return '#10b981'; // Verde Esmeralda (Good)
+  if (score >= 50) return '#f59e0b'; // Ambar (Fair)
+  return '#ef4444'; // Rojo (Poor)
+}
+
+// Helper: Renderiza la lista de detalles (bullets)
+function renderDetails(detailsArray) {
+  if (!detailsArray || !Array.isArray(detailsArray) || detailsArray.length === 0) return '';
+  return `
+    <ul class="detail-list">
+      ${detailsArray.map(item => `<li>${item}</li>`).join('')}
+    </ul>
+  `;
+}
+
+// --- GENERADOR DE HTML ---
 function generateHTML(data) {
-  // Textos según idioma
-  const t = data.lang === 'es' ? {
-    reportTitle: "Soma Express Audit Report",
-    siteEvaluated: "Sitio evaluado",
-    date: "Fecha",
-    overview: "Resumen general",
-    scores: "Calificaciones",
-    aspect: "Aspecto",
-    score: "Calificación",
-    findings: "Hallazgos Prioritarios",
-    category: "Categoría",
-    issue: "Problema detectado",
-    impact: "Impacto",
-    recommendation: "Recomendación Técnica",
-    opportunities: "Oportunidades de Crecimiento",
-    conclusion: "Conclusión"
-  } : {
-    reportTitle: "Soma Express Audit Report",
-    siteEvaluated: "Site evaluated",
-    date: "Date",
-    overview: "Overview",
-    scores: "Scores",
-    aspect: "Aspect",
-    score: "Score",
-    findings: "Priority Findings",
-    category: "Category",
-    issue: "Issue",
-    impact: "Impact",
-    recommendation: "Recommendation",
-    opportunities: "Strategic Opportunities",
-    conclusion: "Conclusion"
+  // Datos principales
+  const score = data.readiness_score || 0;
+  const clusters = data.clusters || {};
+  
+  // Configuración de textos para los 5 Clusters
+  const clusterConfig = {
+    "A_technical":  { title: "A. Technical Foundations", badge: "TECH" },
+    "B_visibility": { title: "B. Visibility Foundations", badge: "SEO" },
+    "C_conversion": { title: "C. Conversion Foundations", badge: "UX" },
+    "D_trust":      { title: "D. Trust Foundations",      badge: "AUTH" },
+    "E_content":    { title: "E. Content Foundations",    badge: "CONTENT" }
   };
 
-  const stars = (n) => "★".repeat(n) + "☆".repeat(10 - n);
+  // Orden explícito para que siempre salgan A, B, C, D, E
+  const orderedKeys = ["A_technical", "B_visibility", "C_conversion", "D_trust", "E_content"];
 
-  // MEJORA 2: Importamos la fuente real para que se vea bien siempre
   return `
     <!DOCTYPE html>
     <html lang="${data.lang || 'en'}">
     <head>
       <meta charset="UTF-8">
-      <title>${t.reportTitle}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+      <title>Ekho Foundations Audit</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
       <style>
         :root {
-          --ink: #0f172a;
-          --accent: #2563eb; /* Azul Soma más corporativo */
-          --bg: #ffffff;
-          --g100: #f1f5f9;
-          --g200: #e2e8f0;
-          --g500: #64748b;
+          --bg: #f8fafc;
+          --card-bg: #ffffff;
           --text: #334155;
+          --dark: #0f172a;
+          --border: #e2e8f0;
         }
-
-        html, body { margin: 0; padding: 0; }
-
-        body {
-          font-family: 'Space Grotesk', sans-serif;
-          color: var(--text);
-          background: var(--bg);
-          max-width: 800px; /* Un poco más ancho para que quepan las tablas */
-          margin: 0 auto;
-          padding: 40px;
-          line-height: 1.6;
-          font-size: 12px; /* Letra un poco más legible */
-        }
-
-        /* HEADER */
-        .header { margin-bottom: 40px; text-align: center; border-bottom: 2px solid var(--g100); padding-bottom: 20px; }
-        .logo { display: block; width: 40px; height: 40px; margin: 0 auto 10px; object-fit: contain; }
-        h1 { font-size: 22px; font-weight: 700; color: var(--ink); margin: 0 0 5px 0; letter-spacing: -0.5px; }
-        .subtitle { font-size: 12px; color: var(--g500); margin: 0; }
-        .subtitle strong { color: var(--accent); }
-
-        /* SECCIONES */
-        .section { margin-bottom: 35px; page-break-inside: avoid; }
-        h2.section-title {
-          font-size: 14px; font-weight: 700; color: var(--ink);
-          margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.05em;
-          border-left: 4px solid var(--accent); padding-left: 10px;
-        }
-
-        p { margin: 0 0 10px 0; text-align: justify; }
-
-        /* TABLAS (Diseño Soma Original Mejorado) */
-        table {
-          width: 100%; border-collapse: collapse;
-          background: #fff; border: 1px solid var(--g200);
-          font-size: 11px; margin-bottom: 10px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-        }
-        th {
-          background: var(--g100); color: var(--ink);
-          font-weight: 700; text-align: left; padding: 10px 12px;
-          border-bottom: 2px solid var(--g200);
-        }
-        td {
-          padding: 10px 12px; border-bottom: 1px solid var(--g200);
-          vertical-align: top; color: var(--text);
-        }
-        tr:last-child td { border-bottom: none; }
         
-        /* Scores Styles */
-        .score-val { font-weight: 700; color: var(--ink); font-size: 1.1em; }
-        .stars { color: #f59e0b; margin-left: 5px; letter-spacing: 1px; }
+        body { 
+          font-family: 'Inter', sans-serif; 
+          background-color: #fff; /* Fondo blanco para impresión */
+          color: var(--text); 
+          max-width: 800px; 
+          margin: 0 auto; 
+          padding: 40px; 
+        }
+        
+        /* HEADER */
+        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid var(--border); padding-bottom: 30px; }
+        .logo { height: 40px; margin-bottom: 15px; object-fit: contain; }
+        .report-title { font-size: 26px; font-weight: 800; color: var(--dark); margin: 0; letter-spacing: -0.5px; }
+        .report-subtitle { color: #64748b; font-size: 14px; margin-top: 8px; font-weight: 500; }
+        
+        /* SCORE CIRCLE */
+        .score-circle { 
+          width: 110px; height: 110px; 
+          border-radius: 50%; 
+          background: var(--dark); 
+          color: white; 
+          display: flex; align-items: center; justify-content: center; 
+          font-size: 2.8em; font-weight: 800; 
+          margin: 25px auto 0; 
+          border: 6px solid ${getColor(score)}; 
+          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
 
-        /* Findings Styles */
-        .impact-badge {
-          display: inline-block; padding: 2px 6px; border-radius: 4px;
-          font-size: 10px; font-weight: 700; text-transform: uppercase;
+        /* EXECUTIVE SUMMARY */
+        .summary-box { 
+          background: #f1f5f9; 
+          padding: 25px; 
+          border-radius: 12px; 
+          margin-bottom: 40px; 
+          border-left: 5px solid #3b82f6; 
+          font-size: 14px; 
+          line-height: 1.6;
+          page-break-inside: avoid;
         }
-        .impact-High, .impact-Alto { background: #fee2e2; color: #991b1b; }
-        .impact-Med, .impact-Medio { background: #fef3c7; color: #92400e; }
-        .impact-Low, .impact-Bajo { background: #dcfce7; color: #166534; }
+        .summary-label { 
+          font-weight: 800; color: var(--dark); text-transform: uppercase; font-size: 0.75rem; display: block; margin-bottom: 8px; letter-spacing: 0.05em;
+        }
 
-        /* Oportunidades */
-        .opportunities-grid {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        /* CARDS (CLUSTERS) */
+        .card { 
+          background: var(--card-bg); 
+          border-radius: 12px; 
+          padding: 24px; 
+          margin-bottom: 24px; 
+          border: 1px solid var(--border); 
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+          display: flex; 
+          align-items: flex-start; 
+          page-break-inside: avoid;
         }
-        .opportunity-card {
-          background: #f8fafc; border: 1px solid var(--g200);
-          border-radius: 6px; padding: 12px; font-size: 11px;
-          display: flex; align-items: flex-start;
+        
+        .card-left { text-align: center; margin-right: 25px; min-width: 70px; padding-top: 5px; }
+        .big-score { font-size: 2em; font-weight: 800; display: block; line-height: 1; margin-bottom: 6px; }
+        .status-badge { 
+          font-size: 0.65em; font-weight: 700; 
+          padding: 4px 8px; border-radius: 20px; 
+          background: #f1f5f9; color: #64748b; 
+          letter-spacing: 0.05em; display: inline-block;
         }
-        .bulb { margin-right: 8px; font-size: 14px; }
+        
+        .card-content { flex: 1; }
+        .card-title { font-weight: 800; font-size: 1.1em; margin-bottom: 8px; color: var(--dark); }
+        .finding { font-weight: 500; color: var(--text); margin-bottom: 12px; font-size: 1em; line-height: 1.5; }
+        
+        /* BULLET POINTS */
+        .detail-list { margin: 0; padding-left: 18px; color: #64748b; font-size: 0.9em; line-height: 1.6; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+        .detail-list li { margin-bottom: 4px; }
 
         /* FOOTER */
         .footer {
-          text-align: center; font-size: 10px; color: var(--g500);
-          border-top: 1px solid var(--g200); padding-top: 15px; margin-top: 40px;
+          text-align: center; font-size: 10px; color: #94a3b8; 
+          margin-top: 50px; border-top: 1px solid var(--border); padding-top: 15px;
         }
       </style>
     </head>
     <body>
       <div class="header">
-        ${logoBase64 ? `<img class="logo" src="data:image/png;base64,${logoBase64}" alt="Logo" />` : ''}
-        <h1>${t.reportTitle}</h1>
-        <p class="subtitle">
-          ${t.siteEvaluated}: <strong>${data.site || 'N/A'}</strong> &nbsp;|&nbsp; ${t.date}: ${data.date || new Date().toLocaleDateString()}
+        ${logoBase64 ? `<img class="logo" src="data:image/png;base64,${logoBase64}" />` : ''}
+        <h1 class="report-title">Ekho Foundations Audit</h1>
+        <p class="report-subtitle">
+          Assessment for: <strong>${data.site || 'Website'}</strong> • ${data.date || new Date().toLocaleDateString()}
         </p>
+        <div class="score-circle">${score}</div>
       </div>
 
-      <div class="section">
-        <h2 class="section-title">1. ${t.overview}</h2>
-        <p>${data.overview || "Análisis pendiente."}</p>
+      <div class="summary-box">
+        <span class="summary-label">Executive Summary</span>
+        ${data.executive_summary || "Processing data..."}
       </div>
 
-      <div class="section">
-        <h2 class="section-title">2. ${t.scores}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th width="40%">${t.aspect}</th>
-              <th>${t.score}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.scores ? Object.entries(data.scores).map(([aspect, value]) => `
-              <tr>
-                <td style="text-transform: capitalize"><strong>${aspect}</strong></td>
-                <td>
-                  <span class="score-val">${value}/10</span>
-                  <span class="stars">${stars(value)}</span>
-                </td>
-              </tr>
-            `).join('') : '<tr><td>No scores available</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">3. ${t.findings}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th width="20%">${t.category}</th>
-              <th width="30%">${t.issue}</th>
-              <th width="15%">${t.impact}</th>
-              <th width="35%">${t.recommendation}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.findings && data.findings.length > 0 ? data.findings.map(f => `
-              <tr>
-                <td><strong>${f.category}</strong></td>
-                <td>${f.issue}</td>
-                <td><span class="impact-badge impact-${f.impact}">${f.impact}</span></td>
-                <td>${f.recommendation}</td>
-              </tr>
-            `).join('') : '<tr><td colspan="4">No critical findings detected.</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">4. ${t.opportunities}</h2>
-        <div class="opportunities-grid">
-          ${data.opportunities ? data.opportunities.map(o => `
-            <div class="opportunity-card">
-              <span class="bulb">💡</span>
-              <span>${o}</span>
-            </div>
-          `).join('') : 'No opportunities listed.'}
+      ${orderedKeys.map(key => {
+        const clusterData = clusters[key] || { score: 0, finding: "No data available", details: [] };
+        const conf = clusterConfig[key] || { title: key, badge: "N/A" };
+        const cScore = clusterData.score || 0;
+        
+        return `
+        <div class="card">
+          <div class="card-left">
+            <span class="big-score" style="color: ${getColor(cScore)}">${cScore}</span>
+            <span class="status-badge">${conf.badge}</span>
+          </div>
+          <div class="card-content">
+            <div class="card-title">${conf.title}</div>
+            <div class="finding">${clusterData.finding}</div>
+            ${renderDetails(clusterData.details)}
+          </div>
         </div>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">5. ${t.conclusion}</h2>
-        <p>${data.conclusion || ""}</p>
-      </div>
+        `;
+      }).join('')}
 
       <div class="footer">
-        Generated by SomaSpace © ${new Date().getFullYear()}
+        Generated by Ekho Engine © ${new Date().getFullYear()}
       </div>
     </body>
     </html>
   `;
 }
 
-// Endpoint Generar PDF
+// --- ENDPOINTS ---
+
 app.post('/generate-pdf', async (req, res) => {
   try {
     const { data } = req.body;
@@ -251,54 +204,79 @@ app.post('/generate-pdf', async (req, res) => {
       return res.status(400).json({ error: 'No data provided' });
     }
 
-    console.log(`Generando reporte Soma Express para: ${data.site}`);
+    // Validación básica para asegurar que es un JSON de Ekho
+    if (!data.clusters && !data.readiness_score) {
+       console.log("Nota: El JSON recibido no parece tener estructura Ekho, generando igual...");
+    }
 
     const html = generateHTML(data);
     
-    // MEJORA 3: Configuración Puppeteer más robusta para Railway/Docker
+    // Configuración robusta de Puppeteer para Railway
     const browser = await puppeteer.launch({
       headless: "new",
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Clave para evitar crash de memoria en contenedores
-        '--font-render-hinting=none' // Mejora renderizado de fuentes
+        '--disable-dev-shm-usage',
+        '--font-render-hinting=none'
       ]
     });
     
     const page = await browser.newPage();
     
-    // Esperamos a que la red esté tranquila (carga de fuentes Google)
+    // Renderizado
     await page.setContent(html, { 
       waitUntil: 'networkidle0',
       timeout: 60000 
     });
 
+    const bodyHeight = await page.evaluate(() => document.body.scrollHeight + 100);
+
     const pdf = await page.pdf({
-      format: 'A4',
       printBackground: true,
-      margin: { top: '40px', right: '40px', bottom: '40px', left: '40px' },
-      displayHeaderFooter: false
+      width: '794px', // Ancho A4
+      height: bodyHeight + 'px', // Altura dinámica continua
+      pageRanges: '1',
+      margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
     
     await browser.close();
     
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="audit-report.pdf"');
+    res.setHeader('Content-Disposition', `attachment; filename="ekho-audit.pdf"`);
     res.send(pdf);
     
   } catch (error) {
-    console.error('Error FATAL generando PDF:', error);
+    console.error('Error generando PDF:', error);
     res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
   }
 });
 
-// Endpoint de prueba (Health Check)
+// Endpoint de prueba visual (Sin gastar ejecuciones de N8N)
+app.get('/test-ekho', (req, res) => {
+    // Datos Dummy para ver el diseño
+    const dummyData = {
+        site: "demo.ekhoengine.com",
+        date: "2025-12-24",
+        readiness_score: 65,
+        executive_summary: "The site has strong conversion elements but lacks authority and speed.",
+        clusters: {
+            "A_technical": { score: 45, finding: "Site is slow (LCP 4.2s).", details: ["High server response time", "Images unoptimized"] },
+            "B_visibility": { score: 60, finding: "Ranking for 20 keywords.", details: ["Meta tags present", "Low volume keywords"] },
+            "C_conversion": { score: 90, finding: "Excellent CTAs found.", details: ["'Get Started' button visible", "Phone number in header"] },
+            "D_trust": { score: 30, finding: "Domain Authority is weak.", details: ["DA 0/100", "No backlinks"] },
+            "E_content": { score: 85, finding: "Good content depth.", details: ["3000+ characters"] }
+        }
+    };
+    res.send(generateHTML(dummyData));
+});
+
+// Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Soma Express PDF Generator' });
+  res.json({ status: 'Ekho Service Operational 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Soma PDF Service running on port ${PORT}`);
+  console.log(`Ekho PDF Service running on port ${PORT}`);
 });
