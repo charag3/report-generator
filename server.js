@@ -1,301 +1,299 @@
-// server.js
+// server.js - Soma Engine (English Only / Modern Dark Mode)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 
-// Carga del Logo de forma segura
+// Safe Logo Loading
 const logoPath = path.join(__dirname, 'assets', 'icon.png');
 let logoBase64 = '';
 try {
-  // Si no existe la imagen, no rompe el servidor, solo deja el logo vacío
   if (fs.existsSync(logoPath)) {
     logoBase64 = fs.readFileSync(logoPath).toString('base64');
   }
 } catch (e) {
-  console.warn("Advertencia: No se pudo cargar el logo:", e.message);
+  console.warn("Warning: Logo not found:", e.message);
 }
 
 const app = express();
-
-// MEJORA 1: Aumentamos el límite a 50MB para evitar errores si el reporte es largo
+// Increased limit for large reports
 app.use(express.json({ limit: '50mb' }));
 
-// Función para generar HTML (Mantenemos el diseño ORIGINAL de Tablas SOMA)
+// --- HTML GENERATOR ---
 function generateHTML(data) {
-  // Textos según idioma
-  const t = data.lang === 'es' ? {
-    reportTitle: "Soma Express Audit Report",
-    siteEvaluated: "Sitio evaluado",
-    date: "Fecha",
-    overview: "Resumen general",
-    scores: "Calificaciones",
-    aspect: "Aspecto",
-    score: "Calificación",
-    findings: "Hallazgos Prioritarios",
-    category: "Categoría",
-    issue: "Problema detectado",
-    impact: "Impacto",
-    recommendation: "Recomendación Técnica",
-    opportunities: "Oportunidades de Crecimiento",
-    conclusion: "Conclusión"
-  } : {
-    reportTitle: "Soma Express Audit Report",
-    siteEvaluated: "Site evaluated",
-    date: "Date",
-    overview: "Overview",
-    scores: "Scores",
-    aspect: "Aspect",
-    score: "Score",
-    findings: "Priority Findings",
-    category: "Category",
-    issue: "Issue",
-    impact: "Impact",
-    recommendation: "Recommendation",
-    opportunities: "Strategic Opportunities",
-    conclusion: "Conclusion"
+  
+  // Helper for Score Colors
+  const getScoreColor = (score) => {
+    if (score >= 90) return '#ccff00'; // Soma Lime (Good)
+    if (score >= 50) return '#f59e0b'; // Orange (Average)
+    return '#ef4444'; // Red (Poor)
   };
 
-  const stars = (n) => "★".repeat(n) + "☆".repeat(10 - n);
-
-  // MEJORA 2: Importamos la fuente real para que se vea bien siempre
   return `
     <!DOCTYPE html>
-    <html lang="${data.lang || 'en'}">
+    <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <title>${t.reportTitle}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+      <title>Digital Audit Report</title>
+      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
       <style>
         :root {
-          --ink: #0f172a;
-          --accent: #2563eb; /* Azul Soma más corporativo */
-          --bg: #ffffff;
-          --g100: #f1f5f9;
-          --g200: #e2e8f0;
-          --g500: #64748b;
-          --text: #334155;
+          --bg: #050505;       /* Deep Black */
+          --card: #121212;     /* Dark Grey */
+          --border: #262626;   /* Subtle Border */
+          --text-main: #ffffff;
+          --text-muted: #a3a3a3;
+          --accent: #ccff00;   /* Soma Lime */
         }
-
-        html, body { margin: 0; padding: 0; }
-
-        body {
-          font-family: 'Space Grotesk', sans-serif;
-          color: var(--text);
-          background: var(--bg);
-          max-width: 800px; /* Un poco más ancho para que quepan las tablas */
-          margin: 0 auto;
-          padding: 40px;
-          line-height: 1.6;
-          font-size: 12px; /* Letra un poco más legible */
+        
+        body { 
+          font-family: 'Space Grotesk', sans-serif; 
+          background-color: var(--bg); 
+          color: var(--text-main); 
+          max-width: 800px; 
+          margin: 0 auto; 
+          padding: 40px; 
+          -webkit-print-color-adjust: exact; 
         }
 
         /* HEADER */
-        .header { margin-bottom: 40px; text-align: center; border-bottom: 2px solid var(--g100); padding-bottom: 20px; }
-        .logo { display: block; width: 40px; height: 40px; margin: 0 auto 10px; object-fit: contain; }
-        h1 { font-size: 22px; font-weight: 700; color: var(--ink); margin: 0 0 5px 0; letter-spacing: -0.5px; }
-        .subtitle { font-size: 12px; color: var(--g500); margin: 0; }
-        .subtitle strong { color: var(--accent); }
-
-        /* SECCIONES */
-        .section { margin-bottom: 35px; page-break-inside: avoid; }
-        h2.section-title {
-          font-size: 14px; font-weight: 700; color: var(--ink);
-          margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.05em;
-          border-left: 4px solid var(--accent); padding-left: 10px;
+        .header { 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: flex-end;
+          border-bottom: 1px solid var(--border); 
+          padding-bottom: 20px; 
+          margin-bottom: 40px; 
         }
-
-        p { margin: 0 0 10px 0; text-align: justify; }
-
-        /* TABLAS (Diseño Soma Original Mejorado) */
-        table {
-          width: 100%; border-collapse: collapse;
-          background: #fff; border: 1px solid var(--g200);
-          font-size: 11px; margin-bottom: 10px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        .header-left h1 { 
+          font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -1px; text-transform: uppercase;
         }
-        th {
-          background: var(--g100); color: var(--ink);
-          font-weight: 700; text-align: left; padding: 10px 12px;
-          border-bottom: 2px solid var(--g200);
-        }
-        td {
-          padding: 10px 12px; border-bottom: 1px solid var(--g200);
-          vertical-align: top; color: var(--text);
-        }
-        tr:last-child td { border-bottom: none; }
+        .header-left p { color: var(--accent); margin: 5px 0 0 0; font-size: 14px; font-weight: 500; }
         
-        /* Scores Styles */
-        .score-val { font-weight: 700; color: var(--ink); font-size: 1.1em; }
-        .stars { color: #f59e0b; margin-left: 5px; letter-spacing: 1px; }
+        .meta-tag {
+          background: var(--card); border: 1px solid var(--border);
+          padding: 8px 16px; border-radius: 4px; font-size: 12px; color: var(--text-muted);
+          text-align: right;
+        }
+        .meta-tag strong { color: var(--text-main); display: block; font-size: 14px; margin-bottom: 2px; }
 
-        /* Findings Styles */
-        .impact-badge {
-          display: inline-block; padding: 2px 6px; border-radius: 4px;
-          font-size: 10px; font-weight: 700; text-transform: uppercase;
+        /* SECTIONS */
+        .section { margin-bottom: 50px; page-break-inside: avoid; }
+        .section-header { 
+          display: flex; align-items: center; margin-bottom: 20px; 
         }
-        .impact-High, .impact-Alto { background: #fee2e2; color: #991b1b; }
-        .impact-Med, .impact-Medio { background: #fef3c7; color: #92400e; }
-        .impact-Low, .impact-Bajo { background: #dcfce7; color: #166534; }
+        .section-title { 
+          font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; 
+        }
+        .line { flex-grow: 1; height: 1px; background: var(--border); margin-left: 15px; }
 
-        /* Oportunidades */
-        .opportunities-grid {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        /* OVERVIEW BOX */
+        .overview-box {
+          background: var(--card); border: 1px solid var(--border);
+          padding: 20px; border-left: 3px solid var(--accent);
+          font-size: 14px; line-height: 1.6; color: #d4d4d4;
         }
-        .opportunity-card {
-          background: #f8fafc; border: 1px solid var(--g200);
-          border-radius: 6px; padding: 12px; font-size: 11px;
-          display: flex; align-items: flex-start;
+
+        /* SCORES GRID */
+        .scores-grid {
+          display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
         }
-        .bulb { margin-right: 8px; font-size: 14px; }
+        .score-card {
+          background: var(--card); border: 1px solid var(--border);
+          padding: 15px 10px; text-align: center; border-radius: 4px;
+        }
+        .score-title { font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; }
+        .score-val { font-size: 24px; font-weight: 700; }
+        
+        /* FINDINGS LIST */
+        .finding-card {
+          background: var(--card); border: 1px solid var(--border);
+          margin-bottom: 15px; padding: 20px; position: relative;
+          border-radius: 4px;
+        }
+        .finding-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .finding-cat { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        
+        .finding-badge { 
+          font-size: 10px; padding: 2px 8px; border-radius: 2px; font-weight: 700; text-transform: uppercase; color: #000;
+        }
+        /* Status Colors mapping */
+        .badge-High, .badge-Alto, .badge-Critical { background: #ef4444; color: white; }
+        .badge-Med, .badge-Medio, .badge-Medium { background: #f59e0b; }
+        .badge-Low, .badge-Bajo { background: var(--accent); }
+
+        .finding-issue { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+        .finding-rec { font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
+        .finding-rec strong { color: white; }
+
+        /* OPPORTUNITIES */
+        .opp-item {
+          display: flex; align-items: flex-start; margin-bottom: 15px;
+          background: rgba(204, 255, 0, 0.05); /* Tinted background */
+          border: 1px solid rgba(204, 255, 0, 0.2);
+          padding: 15px; border-radius: 4px;
+        }
+        .opp-icon { color: var(--accent); margin-right: 15px; font-size: 18px; }
+        .opp-text { font-size: 13px; color: #e5e5e5; }
 
         /* FOOTER */
         .footer {
-          text-align: center; font-size: 10px; color: var(--g500);
-          border-top: 1px solid var(--g200); padding-top: 15px; margin-top: 40px;
+          margin-top: 60px; border-top: 1px solid var(--border); padding-top: 20px;
+          display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);
         }
       </style>
     </head>
     <body>
+      
       <div class="header">
-        ${logoBase64 ? `<img class="logo" src="data:image/png;base64,${logoBase64}" alt="Logo" />` : ''}
-        <h1>${t.reportTitle}</h1>
-        <p class="subtitle">
-          ${t.siteEvaluated}: <strong>${data.site || 'N/A'}</strong> &nbsp;|&nbsp; ${t.date}: ${data.date || new Date().toLocaleDateString()}
-        </p>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">1. ${t.overview}</h2>
-        <p>${data.overview || "Análisis pendiente."}</p>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">2. ${t.scores}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th width="40%">${t.aspect}</th>
-              <th>${t.score}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.scores ? Object.entries(data.scores).map(([aspect, value]) => `
-              <tr>
-                <td style="text-transform: capitalize"><strong>${aspect}</strong></td>
-                <td>
-                  <span class="score-val">${value}/10</span>
-                  <span class="stars">${stars(value)}</span>
-                </td>
-              </tr>
-            `).join('') : '<tr><td>No scores available</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">3. ${t.findings}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th width="20%">${t.category}</th>
-              <th width="30%">${t.issue}</th>
-              <th width="15%">${t.impact}</th>
-              <th width="35%">${t.recommendation}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.findings && data.findings.length > 0 ? data.findings.map(f => `
-              <tr>
-                <td><strong>${f.category}</strong></td>
-                <td>${f.issue}</td>
-                <td><span class="impact-badge impact-${f.impact}">${f.impact}</span></td>
-                <td>${f.recommendation}</td>
-              </tr>
-            `).join('') : '<tr><td colspan="4">No critical findings detected.</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title">4. ${t.opportunities}</h2>
-        <div class="opportunities-grid">
-          ${data.opportunities ? data.opportunities.map(o => `
-            <div class="opportunity-card">
-              <span class="bulb">💡</span>
-              <span>${o}</span>
-            </div>
-          `).join('') : 'No opportunities listed.'}
+        <div class="header-left">
+          ${logoBase64 ? `<img style="height:30px; margin-bottom:10px;" src="data:image/png;base64,${logoBase64}" />` : ''}
+          <h1>Digital Audit Report</h1>
+          <p>Technical & Strategy Analysis</p>
+        </div>
+        <div class="meta-tag">
+          <strong>${data.site || 'Website'}</strong>
+          ${data.date || new Date().toLocaleDateString('en-US')}
         </div>
       </div>
 
       <div class="section">
-        <h2 class="section-title">5. ${t.conclusion}</h2>
-        <p>${data.conclusion || ""}</p>
+        <div class="section-header">
+          <h2 class="section-title">01 / Overview</h2><div class="line"></div>
+        </div>
+        <div class="overview-box">
+          ${data.overview || "Analysis pending..."}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">02 / Core Vitals</h2><div class="line"></div>
+        </div>
+        <div class="scores-grid">
+           ${data.scores ? Object.entries(data.scores).map(([aspect, value]) => `
+              <div class="score-card">
+                <div class="score-title">${aspect}</div>
+                <div class="score-val" style="color: ${getScoreColor(value)}">${value}</div>
+              </div>
+           `).join('') : ''}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">03 / Critical Findings</h2><div class="line"></div>
+        </div>
+        ${data.findings && data.findings.length > 0 ? data.findings.map(f => `
+          <div class="finding-card">
+            <div class="finding-header">
+              <span class="finding-cat">${f.category}</span>
+              <span class="finding-badge badge-${f.impact}">${f.impact}</span>
+            </div>
+            <div class="finding-issue">${f.issue}</div>
+            <div class="finding-rec">
+              <strong>Fix:</strong> ${f.recommendation}
+            </div>
+          </div>
+        `).join('') : '<p style="color:var(--text-muted)">No critical issues found.</p>'}
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">04 / Growth Strategy</h2><div class="line"></div>
+        </div>
+         ${data.opportunities ? data.opportunities.map(o => `
+            <div class="opp-item">
+              <div class="opp-icon">⚡</div>
+              <div class="opp-text">${o}</div>
+            </div>
+         `).join('') : ''}
       </div>
 
       <div class="footer">
-        Generated by SomaSpace © ${new Date().getFullYear()}
+        <span>GENERATED BY SOMA ENGINE</span>
+        <span>SOMASPACE.SITE</span>
       </div>
+
     </body>
     </html>
   `;
 }
 
-// Endpoint Generar PDF
+// --- ENDPOINTS ---
+
 app.post('/generate-pdf', async (req, res) => {
+  let browser = null;
+  let page = null;
+
   try {
     const { data } = req.body;
     
-    if (!data) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
+    if (!data) return res.status(400).json({ error: 'No data provided' });
 
-    console.log(`Generando reporte Soma Express para: ${data.site}`);
+    // 1. Dynamic Filename Logic
+    let filename = 'audit-report.pdf';
+    if (data.site) {
+        // Sanitize URL to create a valid filename
+        const cleanName = data.site.replace(/https?:\/\//, '').replace(/[^a-zA-Z0-9]/g, '_');
+        filename = `Audit_${cleanName}.pdf`;
+    }
+    // Override if provided explicitly
+    if (data.filename) filename = data.filename;
 
     const html = generateHTML(data);
     
-    // MEJORA 3: Configuración Puppeteer más robusta para Railway/Docker
-    const browser = await puppeteer.launch({
+    // 2. Optimized Puppeteer Launch (Railway Safe)
+    browser = await puppeteer.launch({
       headless: "new",
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Clave para evitar crash de memoria en contenedores
-        '--font-render-hinting=none' // Mejora renderizado de fuentes
+        '--disable-dev-shm-usage', // Critical for Docker/Railway memory
+        '--font-render-hinting=none',
+        '--force-color-profile=srgb',
+        '--single-process', 
+        '--no-zygote'
       ]
     });
     
-    const page = await browser.newPage();
+    page = await browser.newPage();
     
-    // Esperamos a que la red esté tranquila (carga de fuentes Google)
+    // Force dark mode preference for rendering
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+
     await page.setContent(html, { 
-      waitUntil: 'networkidle0',
+      waitUntil: 'networkidle0', 
       timeout: 60000 
     });
 
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '40px', right: '40px', bottom: '40px', left: '40px' },
-      displayHeaderFooter: false
+      margin: { top: '30px', right: '30px', bottom: '30px', left: '30px' }
     });
     
+    // 3. Explicit Cleanup
+    await page.close();
     await browser.close();
+    browser = null;
     
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="audit-report.pdf"');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdf);
     
   } catch (error) {
-    console.error('Error FATAL generando PDF:', error);
-    res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
+    console.error('Error generating PDF:', error);
+    // Emergency cleanup
+    if (page) await page.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+    res.status(500).json({ error: 'Failed to generate PDF' });
   }
 });
 
-// Endpoint de prueba (Health Check)
+// Health Check
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Soma Express PDF Generator' });
+  res.json({ status: 'Soma Engine Operational 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
