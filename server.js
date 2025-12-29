@@ -1,12 +1,10 @@
-// server.js - Versión Ekho Engine (Optimized)
+// server.js - Versión Ekho Engine (Clean Corporate)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 
 // --- CONFIGURACIÓN INICIAL ---
-
-// Carga del Logo de forma segura
 const logoPath = path.join(__dirname, 'assets', 'icon.png');
 let logoBase64 = '';
 try {
@@ -18,44 +16,55 @@ try {
 }
 
 const app = express();
-// Aumentamos el límite a 50MB para soportar JSONs grandes con mucho texto
 app.use(express.json({ limit: '50mb' }));
 
 // --- HELPERS VISUALES ---
 
-// Determina el color del borde según el puntaje
 function getColor(score) {
-  if (score >= 90) return '#10b981'; // Verde (Good)
-  if (score >= 50) return '#f59e0b'; // Ambar (Fair)
-  return '#ef4444'; // Rojo (Poor)
+  if (score >= 90) return '#10b981'; // Verde Esmeralda
+  if (score >= 60) return '#f59e0b'; // Ambar
+  return '#ef4444'; // Rojo
 }
 
-// Renderiza la lista de detalles (bullets)
+// Renderiza la lista limpiando emojis del texto original
 function renderDetails(detailsArray) {
   if (!detailsArray || !Array.isArray(detailsArray) || detailsArray.length === 0) return '';
+  
   return `
     <ul class="detail-list">
-      ${detailsArray.map(item => `<li>${item}</li>`).join('')}
+      ${detailsArray.map(item => {
+        // 1. Detectamos el sentimiento antes de limpiar
+        let className = '';
+        if (item.includes('❌') || item.includes('Critical') || item.includes('Poor') || item.includes('NOT FOUND')) className = 'negative';
+        else if (item.includes('✅') || item.includes('Good') || item.includes('Dominant') || item.includes('DETECTED')) className = 'positive';
+        else if (item.includes('Vol:') || item.includes('Rank:')) className = 'data-point';
+
+        // 2. LIMPIEZA: Eliminamos los emojis que vienen de Gemini para que se vea limpio
+        let cleanText = item.replace(/✅|❌/g, '').trim();
+
+        // 3. Formato: Negritas antes de los dos puntos
+        cleanText = cleanText.replace(/^([^:]+):/, '<strong>$1:</strong>');
+
+        return `<li class="${className}">${cleanText}</li>`;
+      }).join('')}
     </ul>
   `;
 }
 
 // --- GENERADOR DE HTML ---
 function generateHTML(data) {
-  // Datos principales
   const score = data.readiness_score || 0;
   const clusters = data.clusters || {};
   
-  // Configuración de textos y badges para los 5 Clusters
+  // Configuración SIN iconos, solo texto y badges
   const clusterConfig = {
     "A_technical":  { title: "A. Technical Foundations", badge: "TECH" },
-    "B_visibility": { title: "B. Visibility Foundations", badge: "SEO" },
-    "C_conversion": { title: "C. Conversion Foundations", badge: "UX" },
-    "D_trust":      { title: "D. Trust Foundations",      badge: "AUTH" },
-    "E_content":    { title: "E. Content Foundations",    badge: "CONTENT" }
+    "B_visibility": { title: "B. Visibility & SEO",      badge: "SEO" },
+    "C_conversion": { title: "C. Conversion & UX",       badge: "UX" },
+    "D_trust":      { title: "D. Trust & Authority",     badge: "AUTH" },
+    "E_content":    { title: "E. Content Strategy",      badge: "MSG" }
   };
 
-  // Orden explícito de las tarjetas
   const orderedKeys = ["A_technical", "B_visibility", "C_conversion", "D_trust", "E_content"];
 
   return `
@@ -63,94 +72,151 @@ function generateHTML(data) {
     <html lang="${data.lang || 'en'}">
     <head>
       <meta charset="UTF-8">
-      <title>Ekho Foundations Audit</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+      <title>Ekho Audit Report</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
       <style>
         :root {
-          --bg: #f8fafc;
-          --card-bg: #ffffff;
-          --text: #334155;
-          --dark: #0f172a;
+          --bg: #ffffff;
+          --text: #1e293b;       /* Slate 800 */
+          --text-light: #64748b; /* Slate 500 */
+          --dark: #0f172a;       /* Slate 900 */
           --border: #e2e8f0;
+          --red-text: #dc2626;
+          --green-text: #16a34a;
         }
         
         body { 
           font-family: 'Inter', sans-serif; 
-          background-color: #fff; 
+          background-color: var(--bg); 
           color: var(--text); 
           max-width: 800px; 
           margin: 0 auto; 
           padding: 40px; 
         }
         
-        /* HEADER */
-        .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid var(--border); padding-bottom: 30px; }
-        .logo { height: 40px; margin-bottom: 15px; object-fit: contain; }
-        .report-title { font-size: 26px; font-weight: 800; color: var(--dark); margin: 0; letter-spacing: -0.5px; }
-        .report-subtitle { color: #64748b; font-size: 14px; margin-top: 8px; font-weight: 500; }
+        /* HEADER - Estilo limpio */
+        .header { text-align: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 30px; }
+        .logo { height: 40px; margin-bottom: 20px; object-fit: contain; }
+        .report-title { font-size: 24px; font-weight: 700; color: var(--dark); margin: 0; letter-spacing: -0.02em; }
+        .report-subtitle { color: var(--text-light); font-size: 13px; margin-top: 8px; font-weight: 500; }
         
-        /* SCORE CIRCLE */
+        /* SCORE CIRCLE - Minimalista */
+        .score-container { margin: 25px auto 0; width: 100px; height: 100px; }
         .score-circle { 
-          width: 110px; height: 110px; 
+          width: 100%; height: 100%; 
           border-radius: 50%; 
-          background: var(--dark); 
-          color: white; 
+          background: #fff; 
+          color: var(--dark); 
           display: flex; align-items: center; justify-content: center; 
-          font-size: 2.8em; font-weight: 800; 
-          margin: 25px auto 0; 
+          font-size: 2.5em; font-weight: 800; 
           border: 6px solid ${getColor(score)}; 
-          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
 
         /* EXECUTIVE SUMMARY */
         .summary-box { 
-          background: #f1f5f9; 
-          padding: 25px; 
-          border-radius: 12px; 
+          background: #f8fafc; 
+          padding: 24px; 
+          border-radius: 6px; 
           margin-bottom: 40px; 
-          border-left: 5px solid #3b82f6; 
           font-size: 14px; 
-          line-height: 1.6;
+          line-height: 1.7;
+          color: #334155;
+          text-align: justify;
           page-break-inside: avoid;
         }
         .summary-label { 
-          font-weight: 800; color: var(--dark); text-transform: uppercase; font-size: 0.75rem; display: block; margin-bottom: 8px; letter-spacing: 0.05em;
+          font-weight: 700; color: var(--dark); text-transform: uppercase; font-size: 0.75rem; display: block; margin-bottom: 10px; letter-spacing: 0.05em;
         }
 
-        /* CARDS (CLUSTERS) */
+        /* CARDS */
         .card { 
-          background: var(--card-bg); 
-          border-radius: 12px; 
-          padding: 24px; 
-          margin-bottom: 24px; 
-          border: 1px solid var(--border); 
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+          background: #fff; 
+          border-radius: 8px; 
+          padding: 0; /* Padding controlado internamente */
+          margin-bottom: 30px; 
           display: flex; 
           align-items: flex-start; 
           page-break-inside: avoid;
         }
         
-        .card-left { text-align: center; margin-right: 25px; min-width: 70px; padding-top: 5px; }
-        .big-score { font-size: 2em; font-weight: 800; display: block; line-height: 1; margin-bottom: 6px; }
+        /* Score a la izquierda alineado limpio */
+        .card-left { 
+            margin-right: 25px; 
+            min-width: 60px; 
+            text-align: center; 
+            padding-top: 4px;
+        }
+        .big-score { font-size: 1.6em; font-weight: 700; display: block; line-height: 1; margin-bottom: 6px; }
         .status-badge { 
-          font-size: 0.65em; font-weight: 700; 
-          padding: 4px 8px; border-radius: 20px; 
-          background: #f1f5f9; color: #64748b; 
-          letter-spacing: 0.05em; display: inline-block;
+          font-size: 0.6em; font-weight: 600; 
+          padding: 2px 6px; border-radius: 4px; 
+          background: #f1f5f9; color: #94a3b8; 
+          text-transform: uppercase; letter-spacing: 0.05em;
         }
         
-        .card-content { flex: 1; }
-        .card-title { font-weight: 800; font-size: 1.1em; margin-bottom: 8px; color: var(--dark); }
-        .finding { font-weight: 500; color: var(--text); margin-bottom: 12px; font-size: 1em; line-height: 1.5; }
+        .card-content { flex: 1; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
+        /* El último item no lleva borde */
+        .card:last-child .card-content { border-bottom: none; }
+
+        .card-title { 
+            font-weight: 700; 
+            font-size: 1.05em; 
+            color: var(--dark); 
+            margin-bottom: 8px; 
+        }
+
+        .finding { 
+          font-weight: 600; 
+          color: #334155; 
+          margin-bottom: 12px; 
+          font-size: 0.95em; 
+        }
         
-        /* BULLET POINTS */
-        .detail-list { margin: 0; padding-left: 18px; color: #64748b; font-size: 0.9em; line-height: 1.6; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-        .detail-list li { margin-bottom: 4px; }
+        /* LISTAS LIMPIAS */
+        .detail-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
+        .detail-list li { 
+          margin-bottom: 8px; 
+          padding-left: 18px; 
+          position: relative; 
+          line-height: 1.5;
+          color: var(--text-light);
+        }
+        /* Bullet point sutil por defecto */
+        .detail-list li::before {
+          content: "•"; color: #cbd5e1; position: absolute; left: 0; top: 0px; font-weight: bold; font-size: 1.2em;
+        }
+        
+        /* Estilos condicionales SIN EMOJIS */
+        .detail-list li.negative { color: var(--text); }
+        .detail-list li.negative::before { 
+            content: "!"; /* Símbolo simple */
+            color: var(--red-text); 
+            font-weight: 800; font-size: 1em; top: 0;
+        }
+        
+        .detail-list li.positive { color: var(--text); }
+        .detail-list li.positive::before { 
+            content: "✓"; /* Check simple tipográfico */
+            color: var(--green-text); 
+            font-weight: 800; font-size: 1em; top: 0;
+        }
+
+        .detail-list li.data-point { 
+            font-family: 'Inter', sans-serif; 
+            font-size: 0.85em; 
+            background: #f8fafc; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            display: inline-block; 
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+        .detail-list li.data-point::before { content: none; }
 
         /* FOOTER */
         .footer {
-          text-align: center; font-size: 10px; color: #94a3b8; 
-          margin-top: 50px; border-top: 1px solid var(--border); padding-top: 15px;
+          text-align: center; font-size: 10px; color: #cbd5e1; 
+          margin-top: 60px;
         }
       </style>
     </head>
@@ -159,9 +225,11 @@ function generateHTML(data) {
         ${logoBase64 ? `<img class="logo" src="data:image/png;base64,${logoBase64}" />` : ''}
         <h1 class="report-title">Ekho Foundations Audit</h1>
         <p class="report-subtitle">
-          Assessment for: <strong>${data.site || 'Website'}</strong> • ${data.date || new Date().toLocaleDateString()}
+          ${data.site || 'Client Website'} • ${data.date || new Date().toLocaleDateString()}
         </p>
-        <div class="score-circle">${score}</div>
+        <div class="score-container">
+            <div class="score-circle">${score}</div>
+        </div>
       </div>
 
       <div class="summary-box">
@@ -190,7 +258,7 @@ function generateHTML(data) {
       }).join('')}
 
       <div class="footer">
-        Generated by Ekho Engine © ${new Date().getFullYear()}
+        Generated by Ekho Engine
       </div>
     </body>
     </html>
@@ -212,42 +280,38 @@ app.post('/generate-pdf', async (req, res) => {
 
     const html = generateHTML(data);
     
-    // --- OPTIMIZACIÓN DE MEMORIA PARA RAILWAY ---
     browser = await puppeteer.launch({
       headless: "new",
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Clave: Evita que Chrome crashee en Docker por falta de memoria compartida
-        '--disable-gpu', // Ahorra recursos
+        '--disable-dev-shm-usage',
+        '--disable-gpu', 
         '--single-process', 
-        '--no-zygote' // Evita procesos zombies
+        '--no-zygote'
       ]
     });
     
     page = await browser.newPage();
     
-    // Timeout de seguridad: 60s máximo para renderizar
     await page.setContent(html, { 
       waitUntil: 'networkidle0',
       timeout: 60000 
     });
 
-    // Calcular altura dinámica
-    const bodyHeight = await page.evaluate(() => document.body.scrollHeight + 100);
+    const bodyHeight = await page.evaluate(() => document.body.scrollHeight + 60);
 
     const pdf = await page.pdf({
       printBackground: true,
-      width: '794px', // Ancho A4
-      height: bodyHeight + 'px', // Altura continua
+      width: '794px', 
+      height: bodyHeight + 'px', 
       pageRanges: '1',
       margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
     
-    // --- CIERRE EXPLÍCITO ---
     await page.close();
     await browser.close();
-    browser = null; // Marcamos como cerrado
+    browser = null; 
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="ekho-audit.pdf"`);
@@ -255,7 +319,6 @@ app.post('/generate-pdf', async (req, res) => {
     
   } catch (error) {
     console.error('Error generando PDF:', error);
-    // Limpieza de emergencia en caso de error
     if (page) await page.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
     
@@ -263,27 +326,8 @@ app.post('/generate-pdf', async (req, res) => {
   }
 });
 
-// Endpoint de prueba visual
-app.get('/test-ekho', (req, res) => {
-    const dummyData = {
-        site: "demo.ekhoengine.com",
-        date: "2025-12-24",
-        readiness_score: 65,
-        executive_summary: "The site has strong conversion elements but lacks authority and speed.",
-        clusters: {
-            "A_technical": { score: 45, finding: "Site is slow (LCP 4.2s).", details: ["High server response time", "Images unoptimized"] },
-            "B_visibility": { score: 60, finding: "Ranking for 20 keywords.", details: ["Meta tags present", "Low volume keywords"] },
-            "C_conversion": { score: 90, finding: "Excellent CTAs found.", details: ["'Get Started' button visible", "Phone number in header"] },
-            "D_trust": { score: 30, finding: "Domain Authority is weak.", details: ["DA 0/100", "No backlinks"] },
-            "E_content": { score: 85, finding: "Good content depth.", details: ["3000+ characters"] }
-        }
-    };
-    res.send(generateHTML(dummyData));
-});
-
-// Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'Ekho Service Operational 🟢' });
+  res.json({ status: 'Ekho Report Service v2 (Clean) Ready 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
