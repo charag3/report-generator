@@ -21,9 +21,15 @@ app.use(express.json({ limit: '50mb' }));
 // --- HELPERS VISUALES ---
 
 function getColor(score) {
-  if (score >= 90) return '#10b981'; // Verde Esmeralda
-  if (score >= 60) return '#f59e0b'; // Ambar
-  return '#ef4444'; // Rojo
+  // New Logic for 0-10 Scale:
+  // Above 7 (8, 9, 10) -> Green
+  if (score > 7) return '#10b981'; 
+  
+  // Below 5 (0, 1, 2, 3, 4) -> Red
+  if (score < 5) return '#ef4444'; 
+  
+  // In between (5, 6, 7) -> Yellow
+  return '#f59e0b'; 
 }
 
 // Renderiza la lista limpiando emojis del texto original
