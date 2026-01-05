@@ -29,7 +29,6 @@ function generateHTML(data) {
   };
 
   // 2. Adaptador de Datos (Compatibilidad Soma antiguo vs Nuevo)
-  // Esto asegura que si envías datos viejos, no se rompa, pero prioriza los nuevos.
   const summary = data.executive_summary || data.overview || "Analysis pending...";
   const issues = data.top_issues || data.findings || [];
   const plan = data.growth_plan || data.opportunities || [];
@@ -47,15 +46,17 @@ function generateHTML(data) {
     <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <title>Growth Audit Report</title>
+      <title>Digital Presence Audit</title>
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
       <style>
         :root {
-          --bg: #050505;
-          --card: #121212;
-          --border: #262626;
-          --text-main: #ffffff;
-          --text-muted: #a3a3a3;
+          /* CAMBIO: Gris oscuro suave en lugar de negro profundo */
+          --bg: #18181b; 
+          /* CAMBIO: Tarjetas un poco más claras para contraste sutil */
+          --card: #27272a; 
+          --border: #3f3f46;
+          --text-main: #f4f4f5;
+          --text-muted: #a1a1aa;
           --accent: #ccff00;
         }
         
@@ -97,7 +98,7 @@ function generateHTML(data) {
           padding: 25px; 
           font-size: 15px; 
           line-height: 1.6; 
-          color: #e5e5e5;
+          color: #e4e4e7;
           border-radius: 0 4px 4px 0;
         }
 
@@ -117,7 +118,7 @@ function generateHTML(data) {
           display: flex; flex-direction: column;
         }
         .finding-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .finding-title { font-size: 15px; font-weight: 700; color: white; }
+        .finding-title { font-size: 15px; font-weight: 700; color: var(--text-main); }
         
         .finding-badge { font-size: 9px; padding: 3px 8px; border-radius: 2px; font-weight: 700; text-transform: uppercase; color: black; }
         .badge-High { background: #ef4444; color: white; }
@@ -136,7 +137,7 @@ function generateHTML(data) {
           color: var(--accent); font-weight: 700; font-size: 14px; margin-right: 15px; 
           min-width: 20px;
         }
-        .step-text { font-size: 13px; color: #e5e5e5; line-height: 1.4; }
+        .step-text { font-size: 13px; color: #e4e4e7; line-height: 1.4; }
 
         .footer {
           margin-top: 60px; border-top: 1px solid var(--border); padding-top: 20px;
@@ -148,7 +149,7 @@ function generateHTML(data) {
       <div class="header">
         <div class="header-left">
           ${logoBase64 ? `<img style="height:30px; margin-bottom:10px;" src="data:image/png;base64,${logoBase64}" />` : ''}
-          <h1>Growth Audit</h1>
+          <h1>Digital Presence Audit</h1>
           <p>Strategy vs. Reality Report</p>
         </div>
         <div class="meta-tag">
