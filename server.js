@@ -1,4 +1,4 @@
-// server.js - Versión Ekho Engine (Clean Corporate + Domain Authority)
+// server.js - Versión Final Lead Magnet (Colores + Ahrefs Logic)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -18,13 +18,22 @@ try {
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 
-// --- HELPERS VISUALES ---
+// --- HELPERS VISUALES (LÓGICA DE COLORES) ---
 
-function getColor(score) {
-  // New Logic for 0-10 Scale:
-  if (score > 7) return '#10b981'; // Green
-  if (score < 5) return '#ef4444'; // Red
-  return '#f59e0b'; // Yellow
+// 1. Para los puntajes normales (0 al 10)
+// Rojo: 0-4 | Amarillo: 5-7 | Verde: 8-10
+function getScoreColor(score) {
+  if (score >= 8) return '#16a34a'; // Verde fuerte
+  if (score >= 5) return '#d97706'; // Amarillo/Naranja
+  return '#dc2626'; // Rojo Alerta
+}
+
+// 2. Para la Autoridad de Dominio (0 al 100) - Lógica "Ahrefs/Lead Magnet"
+// Rojo: 0-10 (Crítico para vender) | Amarillo: 11-29 | Verde: 30+
+function getAuthorityColor(score) {
+  if (score >= 30) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; // Verde
+  if (score > 10) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; // Amarillo
+  return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }; // Rojo (Alerta de Venta)
 }
 
 // Renderiza la lista limpiando emojis del texto original
@@ -34,16 +43,12 @@ function renderDetails(detailsArray) {
   return `
     <ul class="detail-list">
       ${detailsArray.map(item => {
-        // 1. Detectamos el sentimiento antes de limpiar
         let className = '';
         if (item.includes('❌') || item.includes('Critical') || item.includes('Poor') || item.includes('NOT FOUND')) className = 'negative';
-        else if (item.includes('✅') || item.includes('Good') || item.includes('Dominant') || item.includes('DETECTED')) className = 'positive';
+        else if (item.includes('✅') || item.includes('Good') || item.includes('DETECTED')) className = 'positive';
         else if (item.includes('Vol:') || item.includes('Rank:')) className = 'data-point';
 
-        // 2. LIMPIEZA: Eliminamos los emojis que vienen de Gemini para que se vea limpio
         let cleanText = item.replace(/✅|❌/g, '').trim();
-
-        // 3. Formato: Negritas antes de los dos puntos
         cleanText = cleanText.replace(/^([^:]+):/, '<strong>$1:</strong>');
 
         return `<li class="${className}">${cleanText}</li>`;
@@ -56,8 +61,8 @@ function renderDetails(detailsArray) {
 function generateHTML(data) {
   const score = data.readiness_score || 0;
   const clusters = data.clusters || {};
-  // Recibimos la autoridad del dominio (puede ser 0)
-  const daScore = data.domain_authority !== undefined ? data.domain_authority : null;
+  // Recibimos el dato de Backlinks (rank)
+  const daScore = (data.domain_authority !== undefined && data.domain_authority !== null) ? data.domain_authority : 0;
   
   const clusterConfig = {
     "A_technical":  { title: "A. Technical Foundations", badge: "TECH" },
@@ -79,158 +84,75 @@ function generateHTML(data) {
       <style>
         :root {
           --bg: #ffffff;
-          --text: #1e293b;       /* Slate 800 */
-          --text-light: #64748b; /* Slate 500 */
-          --dark: #0f172a;       /* Slate 900 */
+          --text: #1e293b;
+          --text-light: #64748b;
+          --dark: #0f172a;
           --border: #e2e8f0;
           --red-text: #dc2626;
           --green-text: #16a34a;
         }
         
-        body { 
-          font-family: 'Inter', sans-serif; 
-          background-color: var(--bg); 
-          color: var(--text); 
-          max-width: 800px; 
-          margin: 0 auto; 
-          padding: 40px; 
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); max-width: 800px; margin: 0 auto; padding: 40px; }
         
-        /* HEADER - Estilo limpio */
         .header { text-align: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 30px; }
         .logo { height: 40px; margin-bottom: 20px; object-fit: contain; }
         .report-title { font-size: 24px; font-weight: 700; color: var(--dark); margin: 0; letter-spacing: -0.02em; }
         .report-subtitle { color: var(--text-light); font-size: 13px; margin-top: 8px; font-weight: 500; }
         
-        /* SCORE CIRCLE - Minimalista */
+        /* SCORE CIRCLE (Con color dinámico en el borde) */
         .score-container { margin: 25px auto 0; width: 100px; height: 100px; }
         .score-circle { 
-          width: 100%; height: 100%; 
-          border-radius: 50%; 
-          background: #fff; 
-          color: var(--dark); 
+          width: 100%; height: 100%; border-radius: 50%; background: #fff; color: var(--dark); 
           display: flex; align-items: center; justify-content: center; 
           font-size: 2.5em; font-weight: 800; 
-          border: 6px solid ${getColor(score)}; 
+          border: 6px solid ${getScoreColor(score)}; 
         }
 
-        /* EXECUTIVE SUMMARY */
-        .summary-box { 
-          background: #f8fafc; 
-          padding: 24px; 
-          border-radius: 6px; 
-          margin-bottom: 40px; 
-          font-size: 14px; 
-          line-height: 1.7;
-          color: #334155;
-          text-align: justify;
-          page-break-inside: avoid;
-        }
-        .summary-label { 
-          font-weight: 700; color: var(--dark); text-transform: uppercase; font-size: 0.75rem; display: block; margin-bottom: 10px; letter-spacing: 0.05em;
-        }
+        .summary-box { background: #f8fafc; padding: 24px; border-radius: 6px; margin-bottom: 40px; font-size: 14px; line-height: 1.7; color: #334155; text-align: justify; }
+        .summary-label { font-weight: 700; color: var(--dark); text-transform: uppercase; font-size: 0.75rem; display: block; margin-bottom: 10px; letter-spacing: 0.05em; }
 
-        /* CARDS */
-        .card { 
-          background: #fff; 
-          border-radius: 8px; 
-          padding: 0; 
-          margin-bottom: 30px; 
-          display: flex; 
-          align-items: flex-start; 
-          page-break-inside: avoid;
-        }
+        .card { background: #fff; border-radius: 8px; margin-bottom: 30px; display: flex; align-items: flex-start; page-break-inside: avoid; }
         
-        /* Score a la izquierda alineado limpio */
-        .card-left { 
-            margin-right: 25px; 
-            min-width: 60px; 
-            text-align: center; 
-            padding-top: 4px;
+        /* SCORE A LA IZQUIERDA (Aquí aplicamos el color al número) */
+        .card-left { margin-right: 25px; min-width: 60px; text-align: center; padding-top: 4px; }
+        .big-score { 
+            font-size: 1.6em; 
+            font-weight: 700; 
+            display: block; 
+            line-height: 1; 
+            margin-bottom: 6px; 
         }
-        .big-score { font-size: 1.6em; font-weight: 700; display: block; line-height: 1; margin-bottom: 6px; }
-        .status-badge { 
-          font-size: 0.6em; font-weight: 600; 
-          padding: 2px 6px; border-radius: 4px; 
-          background: #f1f5f9; color: #94a3b8; 
-          text-transform: uppercase; letter-spacing: 0.05em;
-        }
+        .status-badge { font-size: 0.6em; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #94a3b8; text-transform: uppercase; }
         
         .card-content { flex: 1; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
-        /* El último item no lleva borde */
         .card:last-child .card-content { border-bottom: none; }
+        .card-title { font-weight: 700; font-size: 1.05em; color: var(--dark); margin-bottom: 8px; }
 
-        .card-title { 
-            font-weight: 700; 
-            font-size: 1.05em; 
-            color: var(--dark); 
-            margin-bottom: 8px; 
-        }
-
-        /* --- NUEVO ESTILO: Badge para el Domain Authority --- */
+        /* BADGE DE AUTORIDAD (Link Building Signal) */
         .da-badge {
             display: inline-block;
-            background: #eff6ff; /* Azul muy suave */
-            color: #2563eb;      /* Azul corporativo */
             font-size: 0.75em;
             font-weight: 700;
             padding: 4px 8px;
             border-radius: 4px;
             margin-bottom: 10px;
-            border: 1px solid #dbeafe;
+            border: 1px solid;
         }
 
-        .finding { 
-          font-weight: 600; 
-          color: #334155; 
-          margin-bottom: 12px; 
-          font-size: 0.95em; 
-        }
+        .finding { font-weight: 600; color: #334155; margin-bottom: 12px; font-size: 0.95em; }
         
-        /* LISTAS LIMPIAS */
+        /* LISTAS */
         .detail-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
-        .detail-list li { 
-          margin-bottom: 8px; 
-          padding-left: 18px; 
-          position: relative; 
-          line-height: 1.5;
-          color: var(--text-light);
-        }
-        .detail-list li::before {
-          content: "•"; color: #cbd5e1; position: absolute; left: 0; top: 0px; font-weight: bold; font-size: 1.2em;
-        }
-        
+        .detail-list li { margin-bottom: 8px; padding-left: 18px; position: relative; line-height: 1.5; color: var(--text-light); }
+        .detail-list li::before { content: "•"; color: #cbd5e1; position: absolute; left: 0; top: 0px; font-weight: bold; font-size: 1.2em; }
         .detail-list li.negative { color: var(--text); }
-        .detail-list li.negative::before { 
-            content: "!"; 
-            color: var(--red-text); 
-            font-weight: 800; font-size: 1em; top: 0;
-        }
-        
+        .detail-list li.negative::before { content: "!"; color: var(--red-text); font-weight: 800; font-size: 1em; top: 0; }
         .detail-list li.positive { color: var(--text); }
-        .detail-list li.positive::before { 
-            content: "✓"; 
-            color: var(--green-text); 
-            font-weight: 800; font-size: 1em; top: 0;
-        }
-
-        .detail-list li.data-point { 
-            font-family: 'Inter', sans-serif; 
-            font-size: 0.85em; 
-            background: #f8fafc; 
-            padding: 4px 10px; 
-            border-radius: 4px; 
-            display: inline-block; 
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
+        .detail-list li.positive::before { content: "✓"; color: var(--green-text); font-weight: 800; font-size: 1em; top: 0; }
+        .detail-list li.data-point { font-family: 'Inter', sans-serif; font-size: 0.85em; background: #f8fafc; padding: 4px 10px; border-radius: 4px; display: inline-block; color: #475569; border: 1px solid #e2e8f0; }
         .detail-list li.data-point::before { content: none; }
 
-        /* FOOTER */
-        .footer {
-          text-align: center; font-size: 10px; color: #cbd5e1; 
-          margin-top: 60px;
-        }
+        .footer { text-align: center; font-size: 10px; color: #cbd5e1; margin-top: 60px; }
       </style>
     </head>
     <body>
@@ -255,17 +177,22 @@ function generateHTML(data) {
         const conf = clusterConfig[key] || { title: key, badge: "N/A" };
         const cScore = clusterData.score || 0;
         
-        // --- LOGICA NUEVA: Insertar Domain Authority si es el cluster D_trust ---
+        // --- LÓGICA DE AUTHORITY BADGE ---
         let extraHeader = '';
-        if (key === 'D_trust' && daScore !== null) {
-            extraHeader = `<div class="da-badge">Domain Authority: ${daScore}/100</div>`;
+        if (key === 'D_trust') {
+            const colors = getAuthorityColor(daScore);
+            extraHeader = `
+              <div class="da-badge" style="background: ${colors.bg}; color: ${colors.text}; border-color: ${colors.border}">
+                Domain Authority: ${daScore}/100
+              </div>
+            `;
         }
-        // -----------------------------------------------------------------------
+        // ---------------------------------
 
         return `
         <div class="card">
           <div class="card-left">
-            <span class="big-score" style="color: ${getColor(cScore)}">${cScore}</span>
+            <span class="big-score" style="color: ${getScoreColor(cScore)}">${cScore}</span>
             <span class="status-badge">${conf.badge}</span>
           </div>
           <div class="card-content">
@@ -287,41 +214,24 @@ function generateHTML(data) {
 }
 
 // --- ENDPOINTS ---
-
 app.post('/generate-pdf', async (req, res) => {
   let browser = null;
   let page = null;
-
   try {
     const { data } = req.body;
-    
-    if (!data) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
+    if (!data) return res.status(400).json({ error: 'No data provided' });
 
     const html = generateHTML(data);
     
     browser = await puppeteer.launch({
       headless: "new",
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu', 
-        '--single-process', 
-        '--no-zygote'
-      ]
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote']
     });
     
     page = await browser.newPage();
-    
-    await page.setContent(html, { 
-      waitUntil: 'networkidle0',
-      timeout: 60000 
-    });
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
 
     const bodyHeight = await page.evaluate(() => document.body.scrollHeight + 60);
-
     const pdf = await page.pdf({
       printBackground: true,
       width: '794px', 
@@ -332,23 +242,20 @@ app.post('/generate-pdf', async (req, res) => {
     
     await page.close();
     await browser.close();
-    browser = null; 
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="ekho-audit.pdf"`);
     res.send(pdf);
-    
   } catch (error) {
     console.error('Error generando PDF:', error);
     if (page) await page.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
-    
     res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
   }
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'Ekho Report Service v2 (Clean + DA) Ready 🟢' });
+  res.json({ status: 'Ekho Report Final v3 Ready 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
