@@ -1,27 +1,12 @@
-const express = require('express');
-const puppeteer = require('puppeteer');
-const path = require('path');
-const fs = require('fs');
-
-const app = express();
-// Aumentamos el límite del body por si envías datos pesados
-app.use(express.json({ limit: '50mb' }));
-
-// --- 1. PLANTILLA FLASH CARD (DARK MODE / LINKEDIN) ---
+// --- PLANTILLA FLASH CARD V2 (PREMIUM GLASS) ---
 function generateCardHTML(data) {
   const da = parseInt(data.da) || 0;
   
-  // Lógica de colores semáforo
-  let daColor = '#ef4444'; // Rojo (0-29)
-  if (da >= 30) daColor = '#eab308'; // Amarillo (30-49)
-  if (da >= 50) daColor = '#22c55e'; // Verde (50+)
-
-  // Aseguramos que los textos no vengan nulos
-  const company = data.company || "Client";
-  const traffic = data.traffic || "0";
-  const quality = data.content_quality || "-";
-  // Si evaluation viene vacía, ponemos un placeholder
-  const evaluation = data.evaluation || '<div class="analysis-item">No analysis data provided.</div>';
+  // Colores dinámicos más vibrantes
+  let daColor = '#ef4444'; 
+  let glowColor = 'rgba(239, 68, 68, 0.4)';
+  if (da >= 30) { daColor = '#fbbf24'; glowColor = 'rgba(251, 191, 36, 0.4)'; }
+  if (da >= 50) { daColor = '#10b981'; glowColor = 'rgba(16, 185, 129, 0.4)'; }
 
   return `
     <!DOCTYPE html>
@@ -29,84 +14,100 @@ function generateCardHTML(data) {
     <head>
       <meta charset="UTF-8">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
         body {
           margin: 0;
           padding: 0;
           width: 1200px;
           height: 630px;
-          background: #0f172a; /* Dark Slate Background */
-          font-family: 'Inter', sans-serif;
+          /* Fondo Gradiente Premium */
+          background: radial-gradient(circle at 10% 20%, #1e293b 0%, #0f172a 90%);
+          font-family: 'Plus Jakarta Sans', sans-serif;
           color: white;
           display: flex;
           box-sizing: border-box;
-          overflow: hidden; /* Evita scrolls accidentales */
+          position: relative;
+        }
+
+        /* Elemento decorativo de fondo */
+        .orb {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: ${glowColor};
+            filter: blur(120px);
+            opacity: 0.15;
+            top: -100px;
+            right: -100px;
+            z-index: 0;
         }
 
         .container {
           display: flex;
           width: 100%;
           height: 100%;
-          padding: 60px;
-          gap: 50px;
+          padding: 70px;
+          gap: 60px;
+          z-index: 1;
         }
 
-        /* --- COLUMNA IZQUIERDA (MÉTRICAS) --- */
+        /* --- IZQUIERDA: MÉTRICAS EN TARJETAS --- */
         .left-col {
-          flex: 0 0 380px;
+          flex: 0 0 350px;
           display: flex;
           flex-direction: column;
+          gap: 20px;
           justify-content: center;
-          gap: 25px;
-          border-right: 1px solid #334155;
-          padding-right: 50px;
         }
 
-        .metric-box {
-          background: #1e293b;
-          padding: 20px;
-          border-radius: 16px;
-          border: 1px solid #334155;
+        .metric-card {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          padding: 24px;
+          border-radius: 20px;
           text-align: center;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
 
         .metric-label {
           color: #94a3b8;
+          font-size: 12px;
           text-transform: uppercase;
-          font-size: 13px;
+          letter-spacing: 1.5px;
           font-weight: 700;
-          letter-spacing: 1.2px;
-          margin-bottom: 8px;
-          display: block;
+          margin-bottom: 5px;
         }
 
-        .metric-value {
-          font-size: 42px;
-          font-weight: 800;
-          display: block;
-          color: #f8fafc;
-        }
-
-        /* Círculo del DA */
         .da-circle {
-            width: 110px;
-            height: 110px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            border: 8px solid ${daColor};
+            border: 6px solid ${daColor};
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 46px;
+            font-size: 42px;
             font-weight: 800;
-            margin: 0 auto;
-            color: white;
-            background: #0f172a;
-            box-shadow: 0 0 25px ${daColor}40; /* Glow */
+            color: #fff;
+            background: rgba(0,0,0,0.2);
+            box-shadow: 0 0 30px ${glowColor};
+            margin-top: 10px;
         }
 
-        /* --- COLUMNA DERECHA (CONTENIDO) --- */
+        .traffic-val {
+            font-size: 38px;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1;
+            margin-top: 5px;
+        }
+
+        /* --- DERECHA: ANÁLISIS --- */
         .right-col {
           flex: 1;
           display: flex;
@@ -114,85 +115,80 @@ function generateCardHTML(data) {
           justify-content: center;
         }
 
-        .company-name {
-          font-size: 20px;
-          color: #38bdf8; /* Sky Blue */
-          font-weight: 700;
-          margin-bottom: 10px;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
+        .brand-pill {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            align-self: flex-start;
+            margin-bottom: 20px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
         }
 
-        .title {
-          font-size: 38px;
-          font-weight: 800;
-          line-height: 1.1;
-          margin: 0 0 30px 0;
-          background: -webkit-linear-gradient(0deg, #fff, #94a3b8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+        h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin: 0 0 30px 0;
+            line-height: 1.1;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .analysis-box {
-          background: #1e293b;
-          border-radius: 16px;
-          padding: 25px;
-          border-left: 6px solid ${daColor}; /* Borde a juego con el DA */
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid ${daColor};
+            padding: 30px;
+            border-radius: 0 16px 16px 0;
         }
 
-        /* Estilos para el HTML inyectado desde n8n */
         .analysis-item {
-          font-size: 17px;
-          line-height: 1.5;
-          color: #cbd5e1;
+            font-size: 19px;
+            line-height: 1.6;
         }
-        .analysis-item strong { color: #fff; font-weight: 700; }
 
         .footer {
             margin-top: auto;
-            font-size: 13px;
             color: #475569;
+            font-size: 12px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-weight: 500;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
-        .dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; }
+        .dot { width: 6px; height: 6px; background: ${daColor}; border-radius: 50%; box-shadow: 0 0 10px ${daColor}; }
 
       </style>
     </head>
     <body>
+      <div class="orb"></div>
       <div class="container">
         
         <div class="left-col">
-            <div class="metric-box" style="border-color: ${daColor}40;">
+            <div class="metric-card">
                 <span class="metric-label">Domain Authority</span>
                 <div class="da-circle">${da}</div>
             </div>
-
-            <div class="metric-box">
-                <span class="metric-label">Organic Traffic</span>
-                <span class="metric-value">${traffic}</span>
-                <span style="font-size: 12px; color: #64748b;">visits / month (est)</span>
-            </div>
-
-            <div class="metric-box">
-                <span class="metric-label">Content Check</span>
-                <span class="metric-value" style="font-size: 28px; color: #38bdf8;">${quality}</span>
+            <div class="metric-card">
+                <span class="metric-label">Est. Organic Traffic</span>
+                <div class="traffic-val">${data.traffic}</div>
+                <div style="font-size:12px; color:#64748b; margin-top:5px">visits / month</div>
             </div>
         </div>
 
         <div class="right-col">
-            <div class="company-name">${company}</div>
-            <h1 class="title">Growth & SEO Audit Snapshot</h1>
-            
+            <div class="brand-pill">${data.company}</div>
+            <h1>Growth Audit<br>Snapshot</h1>
             <div class="analysis-box">
-                ${evaluation} 
+                ${data.evaluation}
             </div>
-
             <div class="footer">
                 <span class="dot"></span> Generated by Ekho Engine AI
             </div>
@@ -203,72 +199,3 @@ function generateCardHTML(data) {
     </html>
   `;
 }
-
-// --- 2. ENDPOINT BLINDADO (GENERATE IMAGE) ---
-app.post('/generate-image', async (req, res) => {
-  let browser = null;
-  try {
-    const { data } = req.body;
-    if (!data) return res.status(400).json({ error: 'No data provided' });
-
-    console.log(`[START] Generando imagen para: ${data.company || 'Unknown'}`);
-
-    // 1. Generamos HTML
-    const html = generateCardHTML(data);
-
-    // 2. Lanzamos Puppeteer con configuración de BAJO CONSUMO (Low Memory)
-    browser = await puppeteer.launch({
-      headless: "new",
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // CRÍTICO: Usa /tmp en lugar de /dev/shm
-        '--disable-gpu',           // CRÍTICO: No hay GPU en servidores cloud
-        '--no-zygote',             // Ahorra procesos extra
-        '--single-process',        // CRÍTICO: Fuerza todo en un proceso
-        '--disable-extensions'
-      ]
-    });
-
-    const page = await browser.newPage();
-
-    // 3. Viewport exacto.
-    // IMPORTANTE: NO usamos deviceScaleFactor: 2 para ahorrar RAM. 
-    // La imagen se verá bien en 1200x630 a 1x.
-    await page.setViewport({ width: 1200, height: 630 });
-
-    // 4. Cargar HTML
-    // 'domcontentloaded' es más rápido y menos propenso a colgarse que 'networkidle0'
-    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-    // 5. Screenshot optimizado
-    const image = await page.screenshot({ 
-        type: 'png',
-        optimizeForSpeed: true 
-    });
-
-    console.log(`[SUCCESS] Imagen generada.`);
-    res.setHeader('Content-Type', 'image/png');
-    res.send(image);
-
-  } catch (error) {
-    console.error('[ERROR] Fallo al generar imagen:', error);
-    res.status(500).json({ error: 'Crash generating image', details: error.message });
-  } finally {
-    // 6. Limpieza agresiva
-    if (browser) {
-        try { await browser.close(); } catch (e) { console.error("Error cerrando browser:", e); }
-    }
-  }
-});
-
-// --- 3. HEALTH CHECK ---
-app.get('/health', (req, res) => {
-  res.json({ status: 'Ekho Image Server (Optimized) Ready 🟢' });
-});
-
-// --- 4. START SERVER ---
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Ekho Server running on port ${PORT}`);
-});
