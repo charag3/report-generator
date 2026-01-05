@@ -1,4 +1,4 @@
-// server.js - Versión Final Lead Magnet (Colores + Ahrefs Logic)
+// server.js - Versión Final Lead Magnet (Lógica de Colores Estricta)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -20,19 +20,21 @@ app.use(express.json({ limit: '50mb' }));
 
 // --- HELPERS VISUALES (LÓGICA DE COLORES) ---
 
-// 1. Para los puntajes normales (0 al 10)
-// Rojo: 0-4 | Amarillo: 5-7 | Verde: 8-10
+// 1. Para los puntajes normales (Escala 0 al 10)
+// Mantiene la proporción: 8/10 = 80%, 5/10 = 50%
 function getScoreColor(score) {
-  if (score >= 8) return '#16a34a'; // Verde fuerte
-  if (score >= 5) return '#d97706'; // Amarillo/Naranja
-  return '#dc2626'; // Rojo Alerta
+  if (score > 8) return '#16a34a'; // Verde fuerte (> 80%)
+  if (score >= 5) return '#d97706'; // Amarillo/Naranja (50% - 80%)
+  return '#dc2626'; // Rojo Alerta (< 50%)
 }
 
-// 2. Para la Autoridad de Dominio (0 al 100) - Lógica "Ahrefs/Lead Magnet"
-// Rojo: 0-10 (Crítico para vender) | Amarillo: 11-29 | Verde: 30+
+// 2. Para la Autoridad de Dominio (Escala 0 al 100) - LÓGICA ESTRICTA
+// Verde: > 80
+// Amarillo: 50 - 80
+// Rojo: < 50
 function getAuthorityColor(score) {
-  if (score >= 30) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; // Verde
-  if (score > 10) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; // Amarillo
+  if (score > 80) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; // Verde
+  if (score >= 50) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; // Amarillo
   return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }; // Rojo (Alerta de Venta)
 }
 
