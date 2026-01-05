@@ -1,4 +1,4 @@
-// server.js - Versión Final Lead Magnet (Lógica de Colores Estricta)
+// server.js - Versión Final Corregida (Escala 0-100 Estricta)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -20,25 +20,27 @@ app.use(express.json({ limit: '50mb' }));
 
 // --- HELPERS VISUALES (LÓGICA DE COLORES) ---
 
-// 1. Para los puntajes normales (Escala 0 al 10)
-// Mantiene la proporción: 8/10 = 80%, 5/10 = 50%
+// 1. Lógica para los Círculos de Puntaje (Cluster Scores)
+// AHORA SÍ: Escala 0-100 Estricta
 function getScoreColor(score) {
-  if (score > 8) return '#16a34a'; // Verde fuerte (> 80%)
-  if (score >= 5) return '#d97706'; // Amarillo/Naranja (50% - 80%)
-  return '#dc2626'; // Rojo Alerta (< 50%)
+  // Convertimos a número por seguridad
+  const val = parseInt(score) || 0;
+  
+  if (val > 80) return '#16a34a'; // Verde (Solo excelencia)
+  if (val >= 50) return '#d97706'; // Amarillo (Promedio)
+  return '#dc2626'; // Rojo (Alerta)
 }
 
-// 2. Para la Autoridad de Dominio (Escala 0 al 100) - LÓGICA ESTRICTA
-// Verde: > 80
-// Amarillo: 50 - 80
-// Rojo: < 50
+// 2. Lógica para el Domain Authority
 function getAuthorityColor(score) {
-  if (score > 80) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; // Verde
-  if (score >= 50) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; // Amarillo
-  return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }; // Rojo (Alerta de Venta)
+  const val = parseInt(score) || 0;
+  
+  if (val > 80) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; 
+  if (val >= 50) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; 
+  return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }; 
 }
 
-// Renderiza la lista limpiando emojis del texto original
+// Renderiza la lista limpiando emojis
 function renderDetails(detailsArray) {
   if (!detailsArray || !Array.isArray(detailsArray) || detailsArray.length === 0) return '';
   
@@ -63,7 +65,6 @@ function renderDetails(detailsArray) {
 function generateHTML(data) {
   const score = data.readiness_score || 0;
   const clusters = data.clusters || {};
-  // Recibimos el dato de Backlinks (rank)
   const daScore = (data.domain_authority !== undefined && data.domain_authority !== null) ? data.domain_authority : 0;
   
   const clusterConfig = {
@@ -101,7 +102,7 @@ function generateHTML(data) {
         .report-title { font-size: 24px; font-weight: 700; color: var(--dark); margin: 0; letter-spacing: -0.02em; }
         .report-subtitle { color: var(--text-light); font-size: 13px; margin-top: 8px; font-weight: 500; }
         
-        /* SCORE CIRCLE (Con color dinámico en el borde) */
+        /* SCORE CIRCLE */
         .score-container { margin: 25px auto 0; width: 100px; height: 100px; }
         .score-circle { 
           width: 100%; height: 100%; border-radius: 50%; background: #fff; color: var(--dark); 
@@ -115,7 +116,6 @@ function generateHTML(data) {
 
         .card { background: #fff; border-radius: 8px; margin-bottom: 30px; display: flex; align-items: flex-start; page-break-inside: avoid; }
         
-        /* SCORE A LA IZQUIERDA (Aquí aplicamos el color al número) */
         .card-left { margin-right: 25px; min-width: 60px; text-align: center; padding-top: 4px; }
         .big-score { 
             font-size: 1.6em; 
@@ -130,7 +130,6 @@ function generateHTML(data) {
         .card:last-child .card-content { border-bottom: none; }
         .card-title { font-weight: 700; font-size: 1.05em; color: var(--dark); margin-bottom: 8px; }
 
-        /* BADGE DE AUTORIDAD (Link Building Signal) */
         .da-badge {
             display: inline-block;
             font-size: 0.75em;
@@ -143,7 +142,6 @@ function generateHTML(data) {
 
         .finding { font-weight: 600; color: #334155; margin-bottom: 12px; font-size: 0.95em; }
         
-        /* LISTAS */
         .detail-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
         .detail-list li { margin-bottom: 8px; padding-left: 18px; position: relative; line-height: 1.5; color: var(--text-light); }
         .detail-list li::before { content: "•"; color: #cbd5e1; position: absolute; left: 0; top: 0px; font-weight: bold; font-size: 1.2em; }
@@ -179,7 +177,7 @@ function generateHTML(data) {
         const conf = clusterConfig[key] || { title: key, badge: "N/A" };
         const cScore = clusterData.score || 0;
         
-        // --- LÓGICA DE AUTHORITY BADGE ---
+        // --- BADGE DE AUTORIDAD ---
         let extraHeader = '';
         if (key === 'D_trust') {
             const colors = getAuthorityColor(daScore);
@@ -189,7 +187,7 @@ function generateHTML(data) {
               </div>
             `;
         }
-        // ---------------------------------
+        // --------------------------
 
         return `
         <div class="card">
@@ -257,7 +255,7 @@ app.post('/generate-pdf', async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'Ekho Report Final v3 Ready 🟢' });
+  res.json({ status: 'Ekho Report Strict v4 Ready 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
