@@ -1,4 +1,4 @@
-// server.js - Versión Final Corregida (Escala 0-100 Estricta)
+// server.js - Versión Final "Flash Card Ready" (PDF + PNG)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -18,14 +18,11 @@ try {
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 
-// --- HELPERS VISUALES (LÓGICA DE COLORES) ---
+// --- HELPERS VISUALES (LÓGICA DE COLORES 0-100 ESTRICTA) ---
 
 // 1. Lógica para los Círculos de Puntaje (Cluster Scores)
-// AHORA SÍ: Escala 0-100 Estricta
 function getScoreColor(score) {
-  // Convertimos a número por seguridad
   const val = parseInt(score) || 0;
-  
   if (val > 80) return '#16a34a'; // Verde (Solo excelencia)
   if (val >= 50) return '#d97706'; // Amarillo (Promedio)
   return '#dc2626'; // Rojo (Alerta)
@@ -34,7 +31,6 @@ function getScoreColor(score) {
 // 2. Lógica para el Domain Authority
 function getAuthorityColor(score) {
   const val = parseInt(score) || 0;
-  
   if (val > 80) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; 
   if (val >= 50) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; 
   return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }; 
@@ -117,13 +113,7 @@ function generateHTML(data) {
         .card { background: #fff; border-radius: 8px; margin-bottom: 30px; display: flex; align-items: flex-start; page-break-inside: avoid; }
         
         .card-left { margin-right: 25px; min-width: 60px; text-align: center; padding-top: 4px; }
-        .big-score { 
-            font-size: 1.6em; 
-            font-weight: 700; 
-            display: block; 
-            line-height: 1; 
-            margin-bottom: 6px; 
-        }
+        .big-score { font-size: 1.6em; font-weight: 700; display: block; line-height: 1; margin-bottom: 6px; }
         .status-badge { font-size: 0.6em; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #94a3b8; text-transform: uppercase; }
         
         .card-content { flex: 1; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
@@ -213,7 +203,7 @@ function generateHTML(data) {
   `;
 }
 
-// --- ENDPOINTS ---
+// --- ENDPOINT ORIGINAL (PDF) ---
 app.post('/generate-pdf', async (req, res) => {
   let browser = null;
   let page = null;
@@ -254,8 +244,48 @@ app.post('/generate-pdf', async (req, res) => {
   }
 });
 
+// --- NUEVO ENDPOINT (IMAGEN / FLASH CARD) ---
+app.post('/generate-image', async (req, res) => {
+  let browser = null;
+  let page = null;
+  try {
+    const { data } = req.body;
+    if (!data) return res.status(400).json({ error: 'No data provided' });
+
+    const html = generateHTML(data); 
+
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote']
+    });
+
+    page = await browser.newPage();
+    // Tamaño ideal para una tarjeta de LinkedIn (Landscape o cuadrada)
+    // Usamos ancho fijo (850) que encaja con el CSS del body (800 + padding)
+    await page.setViewport({ width: 850, height: 800, deviceScaleFactor: 2 }); 
+    
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
+
+    // Tomamos foto del body entero
+    const element = await page.$('body');
+    const image = await element.screenshot({ type: 'png' });
+
+    await page.close();
+    await browser.close();
+
+    res.setHeader('Content-Type', 'image/png');
+    res.send(image);
+
+  } catch (error) {
+    console.error('Error generando Imagen:', error);
+    if (page) await page.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+    res.status(500).json({ error: 'Failed to generate Image', details: error.message });
+  }
+});
+
 app.get('/health', (req, res) => {
-  res.json({ status: 'Ekho Report Strict v4 Ready 🟢' });
+  res.json({ status: 'Ekho Report Service v5 (PDF+Image) Ready 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
