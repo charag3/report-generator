@@ -1,4 +1,4 @@
-// server.js - Versión Ekho Engine (Clean Corporate)
+// server.js - Versión Ekho Engine (Clean Corporate + Domain Authority)
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -22,14 +22,9 @@ app.use(express.json({ limit: '50mb' }));
 
 function getColor(score) {
   // New Logic for 0-10 Scale:
-  // Above 7 (8, 9, 10) -> Green
-  if (score > 7) return '#10b981'; 
-  
-  // Below 5 (0, 1, 2, 3, 4) -> Red
-  if (score < 5) return '#ef4444'; 
-  
-  // In between (5, 6, 7) -> Yellow
-  return '#f59e0b'; 
+  if (score > 7) return '#10b981'; // Green
+  if (score < 5) return '#ef4444'; // Red
+  return '#f59e0b'; // Yellow
 }
 
 // Renderiza la lista limpiando emojis del texto original
@@ -61,8 +56,9 @@ function renderDetails(detailsArray) {
 function generateHTML(data) {
   const score = data.readiness_score || 0;
   const clusters = data.clusters || {};
+  // Recibimos la autoridad del dominio (puede ser 0)
+  const daScore = data.domain_authority !== undefined ? data.domain_authority : null;
   
-  // Configuración SIN iconos, solo texto y badges
   const clusterConfig = {
     "A_technical":  { title: "A. Technical Foundations", badge: "TECH" },
     "B_visibility": { title: "B. Visibility & SEO",      badge: "SEO" },
@@ -138,7 +134,7 @@ function generateHTML(data) {
         .card { 
           background: #fff; 
           border-radius: 8px; 
-          padding: 0; /* Padding controlado internamente */
+          padding: 0; 
           margin-bottom: 30px; 
           display: flex; 
           align-items: flex-start; 
@@ -171,6 +167,19 @@ function generateHTML(data) {
             margin-bottom: 8px; 
         }
 
+        /* --- NUEVO ESTILO: Badge para el Domain Authority --- */
+        .da-badge {
+            display: inline-block;
+            background: #eff6ff; /* Azul muy suave */
+            color: #2563eb;      /* Azul corporativo */
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border: 1px solid #dbeafe;
+        }
+
         .finding { 
           font-weight: 600; 
           color: #334155; 
@@ -187,22 +196,20 @@ function generateHTML(data) {
           line-height: 1.5;
           color: var(--text-light);
         }
-        /* Bullet point sutil por defecto */
         .detail-list li::before {
           content: "•"; color: #cbd5e1; position: absolute; left: 0; top: 0px; font-weight: bold; font-size: 1.2em;
         }
         
-        /* Estilos condicionales SIN EMOJIS */
         .detail-list li.negative { color: var(--text); }
         .detail-list li.negative::before { 
-            content: "!"; /* Símbolo simple */
+            content: "!"; 
             color: var(--red-text); 
             font-weight: 800; font-size: 1em; top: 0;
         }
         
         .detail-list li.positive { color: var(--text); }
         .detail-list li.positive::before { 
-            content: "✓"; /* Check simple tipográfico */
+            content: "✓"; 
             color: var(--green-text); 
             font-weight: 800; font-size: 1em; top: 0;
         }
@@ -248,6 +255,13 @@ function generateHTML(data) {
         const conf = clusterConfig[key] || { title: key, badge: "N/A" };
         const cScore = clusterData.score || 0;
         
+        // --- LOGICA NUEVA: Insertar Domain Authority si es el cluster D_trust ---
+        let extraHeader = '';
+        if (key === 'D_trust' && daScore !== null) {
+            extraHeader = `<div class="da-badge">Domain Authority: ${daScore}/100</div>`;
+        }
+        // -----------------------------------------------------------------------
+
         return `
         <div class="card">
           <div class="card-left">
@@ -256,6 +270,7 @@ function generateHTML(data) {
           </div>
           <div class="card-content">
             <div class="card-title">${conf.title}</div>
+            ${extraHeader}
             <div class="finding">${clusterData.finding}</div>
             ${renderDetails(clusterData.details)}
           </div>
@@ -333,7 +348,7 @@ app.post('/generate-pdf', async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'Ekho Report Service v2 (Clean) Ready 🟢' });
+  res.json({ status: 'Ekho Report Service v2 (Clean + DA) Ready 🟢' });
 });
 
 const PORT = process.env.PORT || 8080;
