@@ -204,9 +204,7 @@ function generateCardHTML(data) {
             border-left: 4px solid ${daColor};
             padding: 30px;
             border-radius: 0 16px 16px 0;
-            display: flex; /* Para poder usar gap */
-            flex-direction: column;
-            gap: 12px; /* Espacio entre los 3 puntos */
+            display: flex; flex-direction: column; gap: 12px; 
         }
 
         .analysis-item {
@@ -225,9 +223,13 @@ function generateCardHTML(data) {
         }
         .footer { margin-top: auto; color: #6366f1; font-size: 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
         .dot { width: 6px; height: 6px; background: ${daColor}; border-radius: 50%; box-shadow: 0 0 10px ${daColor}; }
+
+
       </style>
     </head>
     <body>
+
+
       <div class="orb"></div>
       ${logoImg}
       <div class="container">
@@ -253,7 +255,6 @@ function generateCardHTML(data) {
     </html>
   `;
 }
-
 // ==========================================
 //  ENDPOINT 1: GENERATE PDF
 // ==========================================
