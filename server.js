@@ -8,11 +8,18 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 
 // --- CONFIGURACIÓN DE LOGO ---
+// --- CONFIGURACIÓN DE LOGO ---
 const logoPath = path.join(__dirname, 'assets', 'icon.png');
+const svgLogoPath = path.join(__dirname, 'assets', 'EkhoEngine.svg');
 let logoBase64 = '';
+let svgLogoBase64 = '';
+
 try {
   if (fs.existsSync(logoPath)) {
     logoBase64 = fs.readFileSync(logoPath).toString('base64');
+  }
+  if (fs.existsSync(svgLogoPath)) {
+    svgLogoBase64 = fs.readFileSync(svgLogoPath).toString('base64');
   }
 } catch (e) {
   console.warn("Advertencia: No se pudo cargar el logo:", e.message);
@@ -31,9 +38,9 @@ function getScoreColor(score) {
 
 function getAuthorityColor(score) {
   const val = parseInt(score) || 0;
-  if (val > 80) return { bg: '#dcfce7', text: '#166534', border: '#86efac' }; 
-  if (val >= 50) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }; 
-  return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }; 
+  if (val > 80) return { bg: '#dcfce7', text: '#166534', border: '#86efac' };
+  if (val >= 50) return { bg: '#fef9c3', text: '#854d0e', border: '#fde047' };
+  return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' };
 }
 
 function renderDetails(detailsArray) {
@@ -41,14 +48,14 @@ function renderDetails(detailsArray) {
   return `
     <ul class="detail-list">
       ${detailsArray.map(item => {
-        let className = '';
-        if (item.includes('❌') || item.includes('Critical') || item.includes('Poor') || item.includes('NOT FOUND')) className = 'negative';
-        else if (item.includes('✅') || item.includes('Good') || item.includes('DETECTED')) className = 'positive';
-        else if (item.includes('Vol:') || item.includes('Rank:')) className = 'data-point';
-        let cleanText = item.replace(/✅|❌/g, '').trim();
-        cleanText = cleanText.replace(/^([^:]+):/, '<strong>$1:</strong>');
-        return `<li class="${className}">${cleanText}</li>`;
-      }).join('')}
+    let className = '';
+    if (item.includes('❌') || item.includes('Critical') || item.includes('Poor') || item.includes('NOT FOUND')) className = 'negative';
+    else if (item.includes('✅') || item.includes('Good') || item.includes('DETECTED')) className = 'positive';
+    else if (item.includes('Vol:') || item.includes('Rank:')) className = 'data-point';
+    let cleanText = item.replace(/✅|❌/g, '').trim();
+    cleanText = cleanText.replace(/^([^:]+):/, '<strong>$1:</strong>');
+    return `<li class="${className}">${cleanText}</li>`;
+  }).join('')}
     </ul>
   `;
 }
@@ -60,13 +67,13 @@ function generatePDFHTML(data) {
   const score = data.readiness_score || 0;
   const clusters = data.clusters || {};
   const daScore = (data.domain_authority !== undefined && data.domain_authority !== null) ? data.domain_authority : 0;
-  
+
   const clusterConfig = {
-    "A_technical":  { title: "A. Technical Foundations", badge: "TECH" },
-    "B_visibility": { title: "B. Visibility & SEO",      badge: "SEO" },
-    "C_conversion": { title: "C. Conversion & UX",       badge: "UX" },
-    "D_trust":      { title: "D. Trust & Authority",     badge: "AUTH" },
-    "E_content":    { title: "E. Content Strategy",      badge: "MSG" }
+    "A_technical": { title: "A. Technical Foundations", badge: "TECH" },
+    "B_visibility": { title: "B. Visibility & SEO", badge: "SEO" },
+    "C_conversion": { title: "C. Conversion & UX", badge: "UX" },
+    "D_trust": { title: "D. Trust & Authority", badge: "AUTH" },
+    "E_content": { title: "E. Content Strategy", badge: "MSG" }
   };
   const orderedKeys = ["A_technical", "B_visibility", "C_conversion", "D_trust", "E_content"];
 
@@ -118,15 +125,15 @@ function generatePDFHTML(data) {
         ${data.executive_summary || "Processing data..."}
       </div>
       ${orderedKeys.map(key => {
-        const clusterData = clusters[key] || { score: 0, finding: "No data available", details: [] };
-        const conf = clusterConfig[key] || { title: key, badge: "N/A" };
-        const cScore = clusterData.score || 0;
-        let extraHeader = '';
-        if (key === 'D_trust') {
-            const colors = getAuthorityColor(daScore);
-            extraHeader = `<div class="da-badge" style="background: ${colors.bg}; color: ${colors.text}; border-color: ${colors.border}">Domain Authority: ${daScore}/100</div>`;
-        }
-        return `
+    const clusterData = clusters[key] || { score: 0, finding: "No data available", details: [] };
+    const conf = clusterConfig[key] || { title: key, badge: "N/A" };
+    const cScore = clusterData.score || 0;
+    let extraHeader = '';
+    if (key === 'D_trust') {
+      const colors = getAuthorityColor(daScore);
+      extraHeader = `<div class="da-badge" style="background: ${colors.bg}; color: ${colors.text}; border-color: ${colors.border}">Domain Authority: ${daScore}/100</div>`;
+    }
+    return `
         <div class="card">
           <div class="card-left">
             <span class="big-score" style="color: ${getScoreColor(cScore)}">${cScore}</span>
@@ -139,7 +146,7 @@ function generatePDFHTML(data) {
             ${renderDetails(clusterData.details)}
           </div>
         </div>`;
-      }).join('')}
+  }).join('')}
       <div class="footer">Generated by Ekho Engine</div>
     </body>
     </html>
@@ -151,9 +158,9 @@ function generatePDFHTML(data) {
 // ==========================================
 function generateCardHTML(data) {
   const da = parseInt(data.da) || 0;
-  
+
   // Colores dinámicos
-  let daColor = '#ef4444'; 
+  let daColor = '#ef4444';
   let glowColor = 'rgba(239, 68, 68, 0.4)';
   if (da >= 30) { daColor = '#fbbf24'; glowColor = 'rgba(251, 191, 36, 0.4)'; }
   if (da >= 50) { daColor = '#10b981'; glowColor = 'rgba(16, 185, 129, 0.4)'; }
@@ -163,6 +170,11 @@ function generateCardHTML(data) {
   const traffic = data.traffic || "0";
   const evaluation = data.evaluation || '<div class="analysis-item">Analysis pending...</div>';
 
+  // SVG Logo Injection
+  const logoImg = svgLogoBase64
+    ? `<img src="data:image/svg+xml;base64,${svgLogoBase64}" class="start-logo" />`
+    : '';
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -170,19 +182,21 @@ function generateCardHTML(data) {
       <meta charset="UTF-8">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { margin: 0; padding: 0; width: 1200px; height: 630px; background: radial-gradient(circle at 10% 20%, #1e293b 0%, #0f172a 90%); font-family: 'Plus Jakarta Sans', sans-serif; color: white; display: flex; box-sizing: border-box; position: relative; overflow: hidden; }
+        body { margin: 0; padding: 0; width: 1200px; height: 630px; background: #0F0F1D; font-family: 'Plus Jakarta Sans', sans-serif; color: #C4C8FF; display: flex; box-sizing: border-box; position: relative; overflow: hidden; }
         .orb { position: absolute; width: 500px; height: 500px; background: ${glowColor}; filter: blur(120px); opacity: 0.15; top: -100px; right: -100px; z-index: 0; }
-        .container { display: flex; width: 100%; height: 100%; padding: 70px; gap: 60px; z-index: 1; }
+        .container { display: flex; width: 100%; height: 100%; padding: 70px; gap: 60px; z-index: 1; position: relative; }
         
+        .start-logo { position: absolute; top: 40px; left: 60px; height: 32px; width: auto; opacity: 0.9; }
+
         /* IZQUIERDA */
-        .left-col { flex: 0 0 350px; display: flex; flex-direction: column; gap: 20px; justify-content: center; }
+        .left-col { flex: 0 0 350px; display: flex; flex-direction: column; gap: 20px; justify-content: center; margin-top: 40px; }
         .metric-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 24px; border-radius: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .metric-label { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 5px; }
+        .metric-label { color: #818cf8; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 5px; }
         .da-circle { width: 100px; height: 100px; border-radius: 50%; border: 6px solid ${daColor}; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 800; color: #fff; background: rgba(0,0,0,0.2); box-shadow: 0 0 30px ${glowColor}; margin-top: 10px; }
         .traffic-val { font-size: 38px; font-weight: 800; color: #f8fafc; line-height: 1; margin-top: 5px; }
         
         /* DERECHA */
-        .right-col { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .right-col { flex: 1; display: flex; flex-direction: column; justify-content: center; margin-top: 40px; }
         .brand-pill { display: inline-block; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 6px 14px; border-radius: 50px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; align-self: flex-start; margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.3); }
         h1 { font-size: 48px; font-weight: 800; margin: 0 0 30px 0; line-height: 1.1; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .analysis-box {
@@ -198,7 +212,7 @@ function generateCardHTML(data) {
         .analysis-item {
             font-size: 18px; /* Un poco más pequeño para que quepa la negrita */
             line-height: 1.5;
-            color: #ffffff !important; /* Forzamos blanco siempre */
+            color: #C4C8FF !important; /* Texto claro solicitado */
         }
 
         /* Estilo para los títulos (Gancho:, Problema:, etc.) */
@@ -209,12 +223,13 @@ function generateCardHTML(data) {
             letter-spacing: 1px;
             margin-right: 6px; /* Espacio entre el título y el texto */
         }
-        .footer { margin-top: auto; color: #475569; font-size: 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+        .footer { margin-top: auto; color: #6366f1; font-size: 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
         .dot { width: 6px; height: 6px; background: ${daColor}; border-radius: 50%; box-shadow: 0 0 10px ${daColor}; }
       </style>
     </head>
     <body>
       <div class="orb"></div>
+      ${logoImg}
       <div class="container">
         <div class="left-col">
             <div class="metric-card">
@@ -224,7 +239,7 @@ function generateCardHTML(data) {
             <div class="metric-card">
                 <span class="metric-label">Est. Organic Traffic</span>
                 <div class="traffic-val">${traffic}</div>
-                <div style="font-size:12px; color:#64748b; margin-top:5px">visits / month</div>
+                <div style="font-size:12px; color:#818cf8; margin-top:5px">visits / month</div>
             </div>
         </div>
         <div class="right-col">
@@ -249,31 +264,31 @@ app.post('/generate-pdf', async (req, res) => {
     if (!data) return res.status(400).json({ error: 'No data provided' });
 
     const html = generatePDFHTML(data);
-    
+
     // Configuración robusta de Puppeteer para Serverless
     browser = await puppeteer.launch({
       headless: "new",
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote']
     });
-    
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
 
     const bodyHeight = await page.evaluate(() => document.body.scrollHeight + 60);
     const pdf = await page.pdf({
       printBackground: true,
-      width: '794px', 
-      height: bodyHeight + 'px', 
+      width: '794px',
+      height: bodyHeight + 'px',
       pageRanges: '1',
       margin: { top: 0, right: 0, bottom: 0, left: 0 }
     });
-    
+
     await browser.close();
     res.setHeader('Content-Type', 'application/pdf');
     res.send(pdf);
   } catch (error) {
     console.error('Error generando PDF:', error);
-    if (browser) await browser.close().catch(() => {});
+    if (browser) await browser.close().catch(() => { });
     res.status(500).json({ error: 'Failed to generate PDF', details: error.message });
   }
 });
@@ -288,14 +303,14 @@ app.post('/generate-image', async (req, res) => {
     if (!data) return res.status(400).json({ error: 'No data provided' });
 
     console.log(`[IMG] Generating Flash Card for: ${data.company}`);
-    const html = generateCardHTML(data); 
+    const html = generateCardHTML(data);
 
     // Lanzamiento optimizado para AHORRO DE RAM
     browser = await puppeteer.launch({
       headless: "new",
       args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
         '--disable-dev-shm-usage', // CRÍTICO: Usa disco tmp en vez de RAM compartida
         '--disable-gpu',
         '--no-zygote',
@@ -305,16 +320,16 @@ app.post('/generate-image', async (req, res) => {
     });
 
     const page = await browser.newPage();
-    
+
     // Viewport exacto. NO usamos deviceScaleFactor: 2 para ahorrar RAM.
-    await page.setViewport({ width: 1200, height: 630 }); 
-    
+    await page.setViewport({ width: 1200, height: 630 });
+
     // 'domcontentloaded' es más rápido y estable que 'networkidle0'
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-    const image = await page.screenshot({ 
-        type: 'png',
-        optimizeForSpeed: true 
+    const image = await page.screenshot({
+      type: 'png',
+      optimizeForSpeed: true
     });
 
     await browser.close();
@@ -324,7 +339,7 @@ app.post('/generate-image', async (req, res) => {
 
   } catch (error) {
     console.error('[IMG] Error:', error);
-    if (browser) await browser.close().catch(() => {});
+    if (browser) await browser.close().catch(() => { });
     res.status(500).json({ error: 'Failed', details: error.message });
   }
 });
