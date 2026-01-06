@@ -185,43 +185,28 @@ function generateCardHTML(data) {
         .right-col { flex: 1; display: flex; flex-direction: column; justify-content: center; }
         .brand-pill { display: inline-block; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 6px 14px; border-radius: 50px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; align-self: flex-start; margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.3); }
         h1 { font-size: 48px; font-weight: 800; margin: 0 0 30px 0; line-height: 1.1; background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
         .analysis-box {
             background: rgba(255, 255, 255, 0.05);
             border-left: 4px solid ${daColor};
             padding: 30px;
             border-radius: 0 16px 16px 0;
-            display: flex; 
-            flex-direction: column;
-            gap: 12px; 
+            display: flex; flex-direction: column; gap: 12px; 
         }
 
-        .analysis-item {
-            font-size: 18px; 
-            line-height: 1.5;
-            color: #ffffff !important; 
-        }
-
-        .analysis-item strong {
-            font-weight: 800;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-right: 6px; 
-        }
-        
+        .analysis-item { font-size: 18px; line-height: 1.5; color: #ffffff !important; }
+        .analysis-item strong { font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 1px; margin-right: 6px; }
         .footer { margin-top: auto; color: #475569; font-size: 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
         .dot { width: 6px; height: 6px; background: ${daColor}; border-radius: 50%; box-shadow: 0 0 10px ${daColor}; }
 
-        /* --- NUEVO ESTILO PARA EL LOGO --- */
+        /* --- LOGO SUP. IZQUIERDA --- */
         .ekho-logo {
             position: absolute;
-            top: 40px;    /* Ajusta según prefieras */
-            right: 50px;  /* Esquina superior derecha */
-            height: 40px; /* Tamaño del logo */
-            z-index: 20;  /* Por encima del blur */
-            opacity: 0.9;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); /* Sombra suave para que resalte sobre el fondo oscuro */
+            top: 35px;    /* Un poco de margen superior */
+            left: 70px;   /* Alineado con el padding del container (70px) */
+            height: 32px; /* Tamaño discreto pero visible */
+            z-index: 20;
+            opacity: 1;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
       </style>
     </head>
